@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	gevm "github.com/Jesserc/gevm/gevm"
+	"github.com/Jesserc/gevm/gevm"
 )
 
 func main() {
