@@ -6,46 +6,46 @@ import (
 )
 
 var (
-	ErrStackOverflow  = errors.New("Stack overflow")
-	ErrStackUnderflow = errors.New("Stack underflow")
+	ErrStackOverflow  = errors.New("stack overflow")
+	ErrStackUnderflow = errors.New("stack underflow")
 )
 
 const MAX_STACK_SIZE = 1024
 
-type Stack []any
-
-func (s *Stack) Push(value any) {
-	if len(*s) == MAX_STACK_SIZE {
-		panic(ErrStackOverflow.Error())
-	}
-	*s = append(*s, value)
+type Stack struct {
+	data []any
 }
 
-func (s *Stack) Pop() any {
-	if len(*s) == 0 {
+func (st *Stack) Push(value any) {
+	if len(st.data) == MAX_STACK_SIZE {
+		panic(ErrStackOverflow.Error())
+	}
+	st.data = append(st.data, value)
+}
+
+func (st *Stack) Pop() any {
+	if len(st.data) == 0 {
 		panic(ErrStackUnderflow.Error())
 	}
-
-	element := (*s)[len(*s)-1]
-	*s = (*s)[:len(*s)-1]
+	element := st.data[len(st.data)-1]
+	st.data = (st.data)[:len(st.data)-1]
 	return element
 }
 
-func (s Stack) String() string {
+func (st Stack) String() string {
 	var d string
-	for i := len(s) - 1; i >= 0; i-- {
-		if i == len(s)-1 {
-			d += fmt.Sprintf("%v <first\n", s[i])
+	for i := len(st.data) - 1; i >= 0; i-- {
+		if i == len(st.data)-1 {
+			d += fmt.Sprintf("%v <first\n", st.data[i])
 		} else if i == 0 {
-			d += fmt.Sprintf("%v <last", s[i])
+			d += fmt.Sprintf("%v <last", st.data[i])
 		} else {
-			d += fmt.Sprintf("%v\n", s[i])
+			d += fmt.Sprintf("%v\n", st.data[i])
 		}
 	}
 	return d
 }
 
-func NewStack(size int) *Stack {
-	s := make(Stack, size)
-	return &s
+func NewStack() *Stack {
+	return &Stack{}
 }
