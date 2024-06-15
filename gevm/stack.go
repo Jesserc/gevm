@@ -15,26 +15,26 @@ var (
 const MAX_STACK_SIZE = 1024
 
 type Stack struct {
-	data []*uint256.Int
+	data []uint256.Int
 }
 
 func (st *Stack) Push(value *uint256.Int) {
 	if len(st.data) == MAX_STACK_SIZE {
 		panic(ErrStackOverflow.Error())
 	}
-	st.data = append(st.data, value)
+	st.data = append(st.data, *value)
 }
 
-func (st *Stack) Pop() *uint256.Int {
+func (st *Stack) Pop() uint256.Int {
 	if len(st.data) == 0 {
 		panic(ErrStackUnderflow.Error())
 	}
-	element := st.data[len(st.data)-1]
+	ret := st.data[len(st.data)-1]
 	st.data = (st.data)[:len(st.data)-1]
-	return element
+	return ret
 }
 
-func (st Stack) String() string {
+func (st Stack) ToString() string {
 	var d string
 	for i := len(st.data) - 1; i >= 0; i-- {
 		if i == len(st.data)-1 {

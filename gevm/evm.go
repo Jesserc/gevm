@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/holiman/uint256"
 )
 
 type EVM struct {
@@ -34,10 +35,15 @@ func (evm *EVM) gasDec(gas int) {
 
 func NewEVM(sender common.Address, gas, value int, program, calldata []byte) *EVM {
 	return &EVM{
-		PC:         0,
-		Stack:      Stack{},
-		Memory:     Memory{},
-		Storage:    Storage{},
+		PC: 0,
+		Stack: Stack{
+			data: make([]uint256.Int, 0),
+		},
+		Memory: Memory{},
+		Storage: Storage{
+			data:  make(map[int]common.Hash),
+			cache: make([]int, 0),
+		},
 		Sender:     sender,
 		Program:    program,
 		Gas:        gas,
