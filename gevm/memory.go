@@ -1,12 +1,7 @@
 package gevm
 
 import (
-	"errors"
 	"math"
-)
-
-var (
-	ErrOutOfBound = errors.New("invalid memory offset: out of bound")
 )
 
 type Memory struct {
@@ -31,29 +26,28 @@ func (mem *Memory) Load(offset int) []byte {
 func (mem *Memory) Store(offset int, value []byte) int {
 	expansionCost := 0 // memory expansion cost
 
-	if cap(mem.data) <= offset+len(value) {
+	if mem.Len() <= offset+len(value) {
 		expansionSize := 0
 
 		if mem.Len() == 0 {
 			expansionSize = 32
 			mem.data = make([]byte, 32)
-
 		}
 
-		if cap(mem.data) <= offset+len(value) {
-			expansionSize = offset + len(value)
-			nMem := make([]byte, expansionSize)
-			copy(nMem[:], mem.data[:])
-			mem.data = nMem
-			/*
-				// original memory expansion logic
+		if mem.Len() < offset+len(value) {
+			expansionSize += (offset + len(value)) - mem.Cap()
+			if expansionSize > 0 {
+				mem.data = append(mem.data, make([]byte, expansionSize)...)
+				/*
+					// original memory expansion logic
 					def calc_memory_expansion_gas(memory_byte_size):
-						memory_size_word = (memory_byte_size + 31) / 32
-						memory_cost = (memory_size_word ** 2) / 512 + (3 * memory_size_word)
-						return round(memory_cost)
+					memory_size_word = (memory_byte_size + 31) / 32
+					memory_cost = (memory_size_word ** 2) / 512 + (3 * memory_size_word)
+					return round(memory_cost)
 
-			*/
-			expansionCost = int(math.Pow(float64(expansionSize), 2)) // simplified expansion cost
+				*/
+				expansionCost = int(math.Pow(float64(expansionSize), 2)) // simplified expansion cost
+			}
 		}
 	}
 	copy(mem.data[offset:offset+len(value)], value)
