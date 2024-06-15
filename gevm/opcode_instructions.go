@@ -8,6 +8,7 @@ func stop(evm *EVM) {
 	evm.StopFlag = true
 }
 
+// Arithmetic
 func add(evm *EVM) {
 	a, b := evm.Stack.Pop(), evm.Stack.Pop()
 	evm.Stack.Push(new(uint256.Int).Add(a, b)) // a + b
@@ -86,4 +87,71 @@ func signextend(evm *EVM) {
 	evm.Stack.Push(new(uint256.Int).ExtendSign(num, b))
 	evm.PC += 1
 	evm.gasDec(5)
+}
+
+// Comparisons
+func lt(evm *EVM) {
+	a, b := evm.Stack.Pop(), evm.Stack.Pop()
+	ret := uint256.NewInt(0)
+	if a.Lt(b) {
+		ret = uint256.NewInt(1)
+	}
+	evm.Stack.Push(ret)
+	evm.PC += 1
+	evm.gasDec(3)
+}
+
+func slt(evm *EVM) {
+	a, b := evm.Stack.Pop(), evm.Stack.Pop()
+	ret := uint256.NewInt(0)
+	if a.Slt(b) {
+		ret = uint256.NewInt(1)
+	}
+	evm.Stack.Push(ret)
+	evm.PC += 1
+	evm.gasDec(3)
+}
+
+func gt(evm *EVM) {
+	a, b := evm.Stack.Pop(), evm.Stack.Pop()
+	ret := uint256.NewInt(0)
+	if a.Gt(b) {
+		ret = uint256.NewInt(1)
+	}
+	evm.Stack.Push(ret)
+	evm.PC += 1
+	evm.gasDec(3)
+}
+
+func sgt(evm *EVM) {
+	a, b := evm.Stack.Pop(), evm.Stack.Pop()
+	ret := uint256.NewInt(0)
+	if a.Sgt(b) {
+		ret = uint256.NewInt(1)
+	}
+	evm.Stack.Push(ret)
+	evm.PC += 1
+	evm.gasDec(3)
+}
+
+func eq(evm *EVM) {
+	a, b := evm.Stack.Pop(), evm.Stack.Pop()
+	ret := uint256.NewInt(0)
+	if a.Eq(b) {
+		ret = uint256.NewInt(1)
+	}
+	evm.Stack.Push(ret)
+	evm.PC += 1
+	evm.gasDec(3)
+}
+
+func iszero(evm *EVM) {
+	a := evm.Stack.Pop()
+	ret := uint256.NewInt(0)
+	if a.IsZero() {
+		ret = uint256.NewInt(1)
+	}
+	evm.Stack.Push(ret)
+	evm.PC += 1
+	evm.gasDec(3)
 }
