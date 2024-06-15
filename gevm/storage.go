@@ -1,30 +1,34 @@
 package gevm
 
-import "slices"
+import (
+	"slices"
+
+	"github.com/ethereum/go-ethereum/common"
+)
 
 type Storage struct {
-	data  map[int][]byte
+	data  map[int]common.Hash
 	cache []int // slot keys cache for warm storage access
 }
 
-func (s *Storage) Load(key int) (bool, []byte) {
+func (s *Storage) Load(key int) (bool, common.Hash) {
 	warmAccess := slices.Contains(s.cache, key)
 	if !warmAccess {
 		s.cache = append(s.cache, key)
 	}
 	if _, ok := s.data[key]; !ok {
-		return false, []byte{0x00}
+		return false, common.HexToHash("0x00")
 	}
 	return warmAccess, s.data[key]
 }
 
-func (s *Storage) Store(key int, value []byte) {
+func (s *Storage) Store(key int, value common.Hash) {
 	s.data[key] = value
 }
 
 func NewStorage() *Storage {
 	return &Storage{
-		data:  make(map[int][]byte),
+		data:  make(map[int]common.Hash),
 		cache: make([]int, 0),
 	}
 }
