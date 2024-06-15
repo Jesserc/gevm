@@ -13,23 +13,23 @@ var (
 const MAX_STACK_SIZE = 1024
 
 type Stack struct {
-	data []any
+	data []byte
 }
 
-func (st *Stack) Push(value any) {
+func (st *Stack) Push(value []byte) {
 	if len(st.data) == MAX_STACK_SIZE {
 		panic(ErrStackOverflow.Error())
 	}
-	st.data = append(st.data, value)
+	st.data = append(st.data, value...)
 }
 
-func (st *Stack) Pop() any {
+func (st *Stack) Pop() []byte {
 	if len(st.data) == 0 {
 		panic(ErrStackUnderflow.Error())
 	}
 	element := st.data[len(st.data)-1]
 	st.data = (st.data)[:len(st.data)-1]
-	return element
+	return []byte{element}
 }
 
 func (st Stack) String() string {
