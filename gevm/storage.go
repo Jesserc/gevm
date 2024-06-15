@@ -12,7 +12,6 @@ func (s *Storage) Load(key int) (bool, []byte) {
 	if !warmAccess {
 		s.cache = append(s.cache, key)
 	}
-
 	if _, ok := s.data[key]; !ok {
 		return false, []byte{0x00}
 	}
@@ -24,5 +23,8 @@ func (s *Storage) Store(key int, value []byte) {
 }
 
 func NewStorage() *Storage {
-	return &Storage{data: make(map[int][]byte), cache: make([]int, 0)}
+	return &Storage{
+		data:  make(map[int][]byte),
+		cache: make([]int, 0),
+	}
 }
