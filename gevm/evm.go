@@ -1,6 +1,10 @@
 package gevm
 
-import "github.com/ethereum/go-ethereum/common"
+import (
+	"fmt"
+
+	"github.com/ethereum/go-ethereum/common"
+)
 
 type EVM struct {
 	PC      int
@@ -19,6 +23,13 @@ type EVM struct {
 
 	ReturnData []byte
 	Logs       []byte
+}
+
+func (evm *EVM) gasDec(gas int) {
+	if evm.Gas < gas {
+		panic(fmt.Errorf("out of gas: tried to consume %d gas, but only %d gas remaining", gas, evm.Gas))
+	}
+	evm.Gas -= gas // decrement gas
 }
 
 func NewEVM(sender common.Address, gas, value int, program, calldata []byte) *EVM {
