@@ -155,3 +155,32 @@ func iszero(evm *EVM) {
 	evm.PC += 1
 	evm.gasDec(3)
 }
+
+// Logic
+func and(evm *EVM) {
+	a, b := evm.Stack.Pop(), evm.Stack.Pop()
+	evm.Stack.Push(new(uint256.Int).And(a, b))
+	evm.PC += 1
+	evm.gasDec(3)
+}
+
+func or(evm *EVM) {
+	a, b := evm.Stack.Pop(), evm.Stack.Pop()
+	evm.Stack.Push(new(uint256.Int).Or(a, b))
+	evm.PC += 1
+	evm.gasDec(3)
+}
+
+func xor(evm *EVM) {
+	a, b := evm.Stack.Pop(), evm.Stack.Pop()
+	evm.Stack.Push(new(uint256.Int).Xor(a, b))
+	evm.PC += 1
+	evm.gasDec(3)
+}
+
+func not(evm *EVM) {
+	a := evm.Stack.Pop()
+	evm.Stack.Push(new(uint256.Int).Not(a))
+	evm.PC += 1
+	evm.gasDec(3)
+}
