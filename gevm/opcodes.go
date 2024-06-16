@@ -49,7 +49,7 @@ const (
 
 // Hash
 const (
-	SHA3 Opcode = 0x20
+	KECCAK256 Opcode = 0x20
 )
 
 // Ethereum State
