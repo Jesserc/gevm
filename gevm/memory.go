@@ -1,7 +1,5 @@
 package gevm
 
-import "fmt"
-
 type Memory struct {
 	data []byte
 }
@@ -27,7 +25,6 @@ func (mem *Memory) Store(offset int, value []byte) uint64 {
 	// Current memory size and cost
 	currentMemSize := mem.Len()
 	currentCost := calcMemoryGasCost(uint64(currentMemSize))
-	fmt.Println("curr cost for 0 len:", currentCost)
 
 	// New memory size needed to store value
 	newMemSize := offset + len(value)
@@ -40,7 +37,7 @@ func (mem *Memory) Store(offset int, value []byte) uint64 {
 	}
 
 	if currentMemSize < newMemSize {
-		expansionSize := (newMemSize - currentMemSize)
+		expansionSize := newMemSize - currentMemSize
 		if expansionSize > 0 {
 			mem.data = append(mem.data, make([]byte, expansionSize)...)
 		}

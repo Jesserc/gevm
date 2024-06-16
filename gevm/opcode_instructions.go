@@ -222,8 +222,20 @@ func keccak256(evm *EVM) {
 	evm.Stack.Push(uint256.NewInt(0).SetBytes(hash))
 	evm.PC += 1
 
+	// Gas cost calculations
+	currentMemSize := uint64(evm.Memory.Len())
+	currentMemCost := calcMemoryGasCost(currentMemSize)
+
+	newMemSize := offset.Uint64() + size.Uint64()
+
+	var memExpansionSize uint64
+	if currentMemSize < newMemSize {
+		memExpansionSize = newMemSize - currentMemSize
+	}
+
+	newMemCost := calcMemoryGasCost(currentMemSize + memExpansionSize)
+	totalExpansionCost := newMemCost - currentMemCost
 	minWordSize := toWordSize(size.Uint64())
-	memExpansionCost := calcMemoryGasCost(size.Uint64())
-	dynamicGas := 6*minWordSize + memExpansionCost
+	dynamicGas := 6*minWordSize + totalExpansionCost
 	evm.gasDec(30 + dynamicGas)
 }
