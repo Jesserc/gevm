@@ -1,6 +1,7 @@
 package gevm
 
 import (
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
 )
 
@@ -79,7 +80,7 @@ func exp(evm *EVM) {
 	evm.Stack.Push(new(uint256.Int).Exp(&a, &exponent)) // a ^ exponent
 	evm.PC += 1
 	// gas to decrement = 10 + (50 * size_in_bytes(exponent)))
-	evm.gasDec(10 + (50 * exponent.ByteLen()))
+	evm.gasDec(10 + (50 * uint64(exponent.ByteLen())))
 }
 
 func signextend(evm *EVM) {
@@ -211,4 +212,18 @@ func sar(evm *EVM) {
 	evm.Stack.Push(new(uint256.Int).SRsh(&value, uint(shift.Uint64())))
 	evm.PC += 1
 	evm.gasDec(3)
+}
+
+// Hash function
+func keccak256(evm *EVM) {
+	offset, size := evm.Stack.Pop(), evm.Stack.Pop()
+	value := evm.Memory.Access(int(offset.Uint64()), int(size.Uint64()))
+	hash := crypto.Keccak256(value)
+	evm.Stack.Push(uint256.NewInt(0).SetBytes(hash))
+	evm.PC += 1
+
+	minWordSize := toWordSize(size.Uint64())
+	memExpansionCost := calcMemoryGasCost(size.Uint64())
+	dynamicGas := 6*minWordSize + memExpansionCost
+	evm.gasDec(30 + dynamicGas)
 }
