@@ -217,7 +217,7 @@ func sar(evm *EVM) {
 // Hash function
 func keccak256(evm *EVM) {
 	offset, size := evm.Stack.Pop(), evm.Stack.Pop()
-	value := evm.Memory.Access(int(offset.Uint64()), int(size.Uint64()))
+	value := evm.Memory.Access(offset.Uint64(), size.Uint64())
 	hash := crypto.Keccak256(value)
 	evm.Stack.Push(uint256.NewInt(0).SetBytes(hash))
 	evm.PC += 1
@@ -225,7 +225,6 @@ func keccak256(evm *EVM) {
 	// Gas cost calculations
 	currentMemSize := uint64(evm.Memory.Len())
 	currentMemCost := calcMemoryGasCost(currentMemSize)
-
 	newMemSize := offset.Uint64() + size.Uint64()
 
 	var memExpansionSize uint64
@@ -235,6 +234,7 @@ func keccak256(evm *EVM) {
 
 	newMemCost := calcMemoryGasCost(currentMemSize + memExpansionSize)
 	totalExpansionCost := newMemCost - currentMemCost
+
 	minWordSize := toWordSize(size.Uint64())
 	dynamicGas := 6*minWordSize + totalExpansionCost
 	evm.gasDec(30 + dynamicGas)

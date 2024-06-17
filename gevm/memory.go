@@ -4,8 +4,8 @@ type Memory struct {
 	data []byte
 }
 
-func (mem *Memory) Access(offset, size int) (cpy []byte) {
-	if mem.Len() < offset+size {
+func (mem *Memory) Access(offset, size uint64) (cpy []byte) {
+	if mem.Len() < int(offset+size) {
 		cpy = make([]byte, offset+size)
 		copy(cpy[:], mem.data[:])
 		cpy = cpy[offset : offset+size]
@@ -15,19 +15,19 @@ func (mem *Memory) Access(offset, size int) (cpy []byte) {
 	return
 }
 
-func (mem *Memory) Load(offset int) []byte {
+func (mem *Memory) Load(offset uint64) []byte {
 	return mem.Access(offset, 32)
 }
 
-func (mem *Memory) Store(offset int, value []byte) uint64 {
+func (mem *Memory) Store(offset uint64, value []byte) uint64 {
 	var expansionCost uint64 // memory expansion cost
 
 	// Current memory size and cost
-	currentMemSize := mem.Len()
+	currentMemSize := uint64(mem.Len())
 	currentCost := calcMemoryGasCost(uint64(currentMemSize))
 
 	// New memory size needed to store value
-	newMemSize := offset + len(value)
+	newMemSize := offset + uint64(len(value))
 
 	// Handle initial allocation separately
 	if currentMemSize == 0 {
