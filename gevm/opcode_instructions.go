@@ -239,3 +239,48 @@ func keccak256(evm *EVM) {
 	dynamicGas := 6*minWordSize + totalExpansionCost
 	evm.gasDec(30 + dynamicGas)
 }
+
+// Ethereum environment opcodes
+func address(evm *EVM) {
+	evm.Stack.Push(uint256.MustFromHex(evm.Sender.Hex()))
+	evm.PC += 1
+	evm.gasDec(3)
+}
+
+// This is a mocked version and doesn't behave exactly as it would in a real EVM.
+//
+// balance pushes a mocked balance value onto the stack.
+func balance(evm *EVM) {
+	_ = evm.Stack.Pop() // Pop the address from the stack, though it's not used here
+	evm.Stack.Push(uint256.MustFromDecimal("99999999999"))
+	evm.PC += 1
+
+	// Decrease the gas by the amount needed for a cold balance check
+	// Note: Normally, the gas cost could be 100 for warm access, but we are assuming cold access since this is a mocked version
+	evm.gasDec(2600)
+}
+
+// This is a mocked version and doesn't behave exactly as it would in a real EVM.
+//
+// origin pushes a mocked address (evm.Sender) of the transaction origin onto the stack.
+func origin(evm *EVM) {
+	// We're using evm.Sender because this is a mocked version, and evm.sender not always be the same as tx.origin in real world cases.
+	evm.Stack.Push(uint256.MustFromHex(evm.Sender.Hex()))
+	evm.PC += 1
+	evm.gasDec(2)
+}
+
+// This is a mocked version and doesn't behave exactly as it would in a real EVM.
+//
+// caller pushes a mocked address of the current transaction caller in a transaction call chain.
+func caller(evm *EVM) {
+	evm.Stack.Push(uint256.MustFromHex("0xBc73e0231621D6274671839f9dF8EE7E2C8A6f93"))
+	evm.PC += 1
+	evm.gasDec(2)
+}
+
+func callvalue(evm *EVM) {
+	evm.Stack.Push(evm.Value)
+	evm.PC += 1
+	evm.gasDec(2)
+}
