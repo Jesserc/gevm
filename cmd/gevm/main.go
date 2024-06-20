@@ -70,7 +70,8 @@ func main() {
 	cost := evm.Memory.Store(0x0, hexutil.MustDecode("0xFFFFFFFF"))
 	fmt.Println("Memory expansion cost:", cost)
 	// evm.Memory.Store(0x0, []byte("0xFFFFFFFF"))
-	evm.Stack.Push(uint256.MustFromHex("0x4"))
+	// evm.Stack.Push(uint256.MustFromHex("0x4"))
+	evm.Calldata = []byte("0xffff")
 	evm.Stack.Push(uint256.MustFromHex("0x0"))
 
 	fmt.Println("=== EVM State After Operations ===")

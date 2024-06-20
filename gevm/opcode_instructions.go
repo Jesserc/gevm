@@ -1,6 +1,7 @@
 package gevm
 
 import (
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
 )
@@ -233,11 +234,12 @@ func keccak256(evm *EVM) {
 	}
 
 	newMemCost := calcMemoryGasCost(currentMemSize + memExpansionSize)
-	totalExpansionCost := newMemCost - currentMemCost
+	totalMemExpansionCost := newMemCost - currentMemCost
 
 	minWordSize := toWordSize(size.Uint64())
-	dynamicGas := 6*minWordSize + totalExpansionCost
-	evm.gasDec(30 + dynamicGas)
+	staticGas := uint64(30)
+	dynamicGas := 6*minWordSize + totalMemExpansionCost
+	evm.gasDec(staticGas + dynamicGas)
 }
 
 // Ethereum environment opcodes
@@ -284,3 +286,66 @@ func callvalue(evm *EVM) {
 	evm.PC += 1
 	evm.gasDec(2)
 }
+
+func calldataload(evm *EVM) {
+	offsetU256 := evm.Stack.Pop()
+	offset := offsetU256.Uint64()
+
+	delta := uint64(0)
+	if offset+32 > uint64(len(evm.Calldata)) {
+		delta = offset + 32 - uint64(len(evm.Calldata))
+	}
+
+	// calldata := make([]byte, 32)
+	var calldata []byte
+	if offset < uint64(len(evm.Calldata)) {
+		// copy(calldata, evm.Calldata[i:min(i+32-delta, uint64(len(evm.Calldata)))]) // we can use this commented out code to achieve the same thing
+		calldata = common.RightPadBytes(evm.Calldata[offset:min(offset+32-delta, uint64(len(evm.Calldata)))], 32)
+	}
+
+	evm.Stack.Push(uint256.NewInt(0).SetBytes(calldata))
+	evm.PC++
+	evm.gasDec(3)
+}
+
+func calldatasize(evm *EVM) {
+	calldatasize := uint64(len(evm.Calldata))
+	evm.Stack.Push(uint256.NewInt(calldatasize))
+	evm.PC += 1
+	evm.gasDec(2)
+}
+
+func calldatacopy(evm *EVM) {
+	destMemOffsetU256 := evm.Stack.Pop()
+	offsetU256 := evm.Stack.Pop() // 31
+	sizeU256 := evm.Stack.Pop()   // 8
+
+	destMemOffset, offset, size := destMemOffsetU256.Uint64(), offsetU256.Uint64(), sizeU256.Uint64()
+
+	delta := uint64(0)
+	if offset+size > uint64(len(evm.Calldata)) {
+		delta = offset + size - uint64(len(evm.Calldata))
+	}
+
+	var calldata []byte
+	if offset < uint64(len(evm.Calldata)) {
+		calldata = evm.Calldata[offset:min(offset+size-delta, uint64(len(evm.Calldata)))]
+	}
+
+	memExpansionCost := evm.Memory.Store(destMemOffset, calldata)
+
+	minWordSize := toWordSize(size)
+	staticGas := uint64(3)
+	dynamicGas := 3*minWordSize + memExpansionCost
+
+	evm.PC += 1
+	evm.gasDec(staticGas + dynamicGas)
+}
+
+func codesize(evm *EVM) {
+	codesize := uint64(len(evm.Program))
+	evm.Stack.Push(uint256.NewInt(0).SetUint64(codesize))
+	evm.PC += 1
+	evm.gasDec(2)
+}
+
