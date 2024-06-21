@@ -1,7 +1,6 @@
 package gevm
 
 import (
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
 )
@@ -291,17 +290,7 @@ func calldataload(evm *EVM) {
 	offsetU256 := evm.Stack.Pop()
 	offset := offsetU256.Uint64()
 
-	delta := uint64(0)
-	if offset+32 > uint64(len(evm.Calldata)) {
-		delta = offset + 32 - uint64(len(evm.Calldata))
-	}
-
-	// calldata := make([]byte, 32)
-	var calldata []byte
-	if offset < uint64(len(evm.Calldata)) {
-		// copy(calldata, evm.Calldata[i:min(i+32-delta, uint64(len(evm.Calldata)))]) // we can use this commented out code to achieve the same thing
-		calldata = common.RightPadBytes(evm.Calldata[offset:min(offset+32-delta, uint64(len(evm.Calldata)))], 32)
-	}
+	calldata := getData(evm.Calldata, offset, 32)
 
 	evm.Stack.Push(uint256.NewInt(0).SetBytes(calldata))
 	evm.PC++
@@ -317,21 +306,12 @@ func calldatasize(evm *EVM) {
 
 func calldatacopy(evm *EVM) {
 	destMemOffsetU256 := evm.Stack.Pop()
-	offsetU256 := evm.Stack.Pop() // 31
-	sizeU256 := evm.Stack.Pop()   // 8
+	offsetU256 := evm.Stack.Pop()
+	sizeU256 := evm.Stack.Pop()
 
 	destMemOffset, offset, size := destMemOffsetU256.Uint64(), offsetU256.Uint64(), sizeU256.Uint64()
 
-	length := uint64(len(evm.Calldata))
-	if offset > length {
-		offset = length
-	}
-
-	end := offset + size
-	if end > length {
-		end = length
-	}
-	calldata := evm.Calldata[offset:end]
+	calldata := getData(evm.Calldata, offset, size)
 	memExpansionCost := evm.Memory.Store(destMemOffset, calldata)
 
 	minWordSize := toWordSize(size)
