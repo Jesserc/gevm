@@ -322,16 +322,16 @@ func calldatacopy(evm *EVM) {
 
 	destMemOffset, offset, size := destMemOffsetU256.Uint64(), offsetU256.Uint64(), sizeU256.Uint64()
 
-	delta := uint64(0)
-	if offset+size > uint64(len(evm.Calldata)) {
-		delta = offset + size - uint64(len(evm.Calldata))
+	length := uint64(len(evm.Calldata))
+	if offset > length {
+		offset = length
 	}
 
-	var calldata []byte
-	if offset < uint64(len(evm.Calldata)) {
-		calldata = evm.Calldata[offset:min(offset+size-delta, uint64(len(evm.Calldata)))]
+	end := offset + size
+	if end > length {
+		end = length
 	}
-
+	calldata := evm.Calldata[offset:end]
 	memExpansionCost := evm.Memory.Store(destMemOffset, calldata)
 
 	minWordSize := toWordSize(size)
@@ -348,4 +348,3 @@ func codesize(evm *EVM) {
 	evm.PC += 1
 	evm.gasDec(2)
 }
-
