@@ -1,2 +1,3 @@
-- use math.SafeAdd()
+- Use math.SafeAdd()...?
 - Implement some precompiles
+- Increase readability of keccak256 function in gevm/opcode_instructions.go

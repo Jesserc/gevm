@@ -316,10 +316,10 @@ func calldatacopy(evm *EVM) {
 
 	minWordSize := toWordSize(size)
 	staticGas := uint64(3)
-	dynamicGas := 3*minWordSize + memExpansionCost
+	dynamicGas := staticGas*minWordSize + memExpansionCost
 
 	evm.PC += 1
-	evm.gasDec(staticGas + dynamicGas)
+	evm.gasDec(dynamicGas)
 }
 
 func codesize(evm *EVM) {
