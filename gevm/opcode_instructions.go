@@ -216,7 +216,8 @@ func sar(evm *EVM) {
 
 // Hash function
 func keccak256(evm *EVM) {
-	offset, size := evm.Stack.Pop(), evm.Stack.Pop()
+	offset := evm.Stack.Pop()
+	size := evm.Stack.Pop()
 	value := evm.Memory.Access(offset.Uint64(), size.Uint64())
 	hash := crypto.Keccak256(value)
 	evm.Stack.Push(uint256.NewInt(0).SetBytes(hash))
@@ -255,17 +256,14 @@ func balance(evm *EVM) {
 	_ = evm.Stack.Pop() // Pop the address from the stack, though it's not used here
 	evm.Stack.Push(uint256.MustFromDecimal("99999999999"))
 	evm.PC += 1
-
-	// Decrease the gas by the amount needed for a cold balance check
-	// Note: Normally, the gas cost could be 100 for warm access, but we are assuming cold access since this is a mocked version
-	evm.gasDec(2600)
+	evm.gasDec(2600) // '2600' here represents "address access cost" and can be 100 for warm access, but we are assuming cold access since this is a mocked version.
 }
 
 // This is a mocked version and doesn't behave exactly as it would in a real EVM.
 //
 // origin pushes a mocked address (evm.Sender) of the transaction origin onto the stack.
 func origin(evm *EVM) {
-	// We're using evm.Sender because this is a mocked version, and evm.sender not always be the same as tx.origin in real world cases.
+	// We're using evm.Sender because this is a mocked version, but evm.sender may not always be the same as tx.origin in real world cases.
 	evm.Stack.Push(uint256.MustFromHex(evm.Sender.Hex()))
 	evm.PC += 1
 	evm.gasDec(2)
@@ -327,4 +325,59 @@ func codesize(evm *EVM) {
 	evm.Stack.Push(uint256.NewInt(0).SetUint64(codesize))
 	evm.PC += 1
 	evm.gasDec(2)
+}
+
+func codecopy(evm *EVM) {
+	destMemOffsetU256 := evm.Stack.Pop()
+	offsetU256 := evm.Stack.Pop()
+	sizeU256 := evm.Stack.Pop()
+
+	destMemOffset, offset, size := destMemOffsetU256.Uint64(), offsetU256.Uint64(), sizeU256.Uint64()
+
+	codeCopy := getData(evm.Program, offset, size)
+	memExpansionCost := evm.Memory.Store(destMemOffset, codeCopy)
+
+	minWordSize := toWordSize(size)
+	staticGas := uint64(3)
+	dynamicGas := staticGas*minWordSize + memExpansionCost
+
+	evm.PC += 1
+	evm.gasDec(dynamicGas)
+}
+
+// This is a mocked version and doesn't behave exactly as it would in a real EVM.
+//
+// gasprice pushes a mocked gas price (0) onto the stack.
+func gasprice(evm *EVM) {
+	evm.Stack.Push(uint256.NewInt(0)) // push 0x0
+	evm.PC += 1
+	evm.gasDec(2)
+}
+
+// This is a mocked version and doesn't behave exactly as it would in a real EVM.
+//
+// extcodesize pushes a mocked codesize of an external account (0) onto the stack.
+func extcodesize(evm *EVM) {
+	_ = evm.Stack.Pop()               // Pop external address off the stack
+	evm.Stack.Push(uint256.NewInt(0)) // push 0x0
+	evm.PC += 1
+	evm.gasDec(2)
+}
+
+func extcodecopy(evm *EVM) {
+	_ = evm.Stack.Pop() // Pop external address off the stack
+	destMemOffsetU256 := evm.Stack.Pop()
+	_ = evm.Stack.Pop() // Pop offset in the external code to copy.
+	sizeU256 := evm.Stack.Pop()
+
+	destMemOffset, size := destMemOffsetU256.Uint64(), sizeU256.Uint64()
+
+	extCodeCopy := []byte{} // mocked (no external code)
+	memExpansionCost := evm.Memory.Store(destMemOffset, extCodeCopy)
+
+	minWordSize := toWordSize(size)
+	dynamicGas := 3*minWordSize + memExpansionCost + 2600 // '2600' here represents "address access cost" and can be 100 for warm access, but we are assuming cold access since this is a mocked version.
+
+	evm.PC += 1
+	evm.gasDec(dynamicGas)
 }
