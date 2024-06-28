@@ -67,17 +67,29 @@ func main() {
 	   	fmt.Println("Storage value:", v)                   // [0]
 	   	fmt.Println()
 	*/
-	cost := evm.Memory.Store(0x0, hexutil.MustDecode("0xFFFFFFFF"))
-	fmt.Println("Memory expansion cost:", cost)
+	cost := evm.Memory.Store(0x0, hexutil.MustDecode("0xFFFFFFFF")) // 4 bytes
+	fmt.Println("First memory expansion cost:", cost)
 	// evm.Memory.Store(0x0, []byte("0xFFFFFFFF"))
 	// evm.Stack.Push(uint256.MustFromHex("0x4"))
-	evm.Calldata = []byte("0xffff")
-	evm.Stack.Push(uint256.MustFromHex("0x0"))
+	// evm.Calldata = []byte("0xffff")
+	// evm.Stack.Push(uint256.MustFromHex("0x0"))
 
+	// evm.Code = hexutil.MustDecode("0x600260020200")
+	// evm.Code = hexutil.MustDecode("0x60123456")
+	// fmt.Println("evm pc before:", evm.PC)
+
+	// gevm.PushN(evm, 3)
+	// fmt.Println("evm pc after:", evm.PC)
+	// gevm.PushN(evm, 0)
+	// fmt.Println("evm pc after zero:", evm.PC)
+	evm.Stack.Push(uint256.NewInt(30009))
+	gevm.Mload(evm)
+
+	fmt.Println()
+
+	fmt.Printf("evm code in hex: 0x%x:\n", evm.Code)
 	fmt.Println("=== EVM State After Operations ===")
 	fmt.Printf("EVM Stack: %v\n", evm.Stack)
 	fmt.Printf("EVM Memory: %v\n", evm.Memory)
 	fmt.Printf("EVM: %v\n", evm)
-
-	// fmt.Println()
 }

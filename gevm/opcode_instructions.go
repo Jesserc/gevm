@@ -216,9 +216,12 @@ func sar(evm *EVM) {
 
 // Hash function
 func keccak256(evm *EVM) {
-	offset := evm.Stack.Pop()
-	size := evm.Stack.Pop()
-	value := evm.Memory.Access(offset.Uint64(), size.Uint64())
+	offsetU256 := evm.Stack.Pop()
+	sizeU256 := evm.Stack.Pop()
+
+	offset, size := offsetU256.Uint64(), sizeU256.Uint64()
+
+	value := evm.Memory.Access(offset, size)
 	hash := crypto.Keccak256(value)
 	evm.Stack.Push(uint256.NewInt(0).SetBytes(hash))
 	evm.PC++
@@ -226,7 +229,7 @@ func keccak256(evm *EVM) {
 	// Gas cost calculations
 	currentMemSize := uint64(evm.Memory.Len())
 	currentMemCost := calcMemoryGasCost(currentMemSize)
-	newMemSize := offset.Uint64() + size.Uint64()
+	newMemSize := offset + size
 
 	var memExpansionSize uint64
 	if currentMemSize < newMemSize {
@@ -236,7 +239,7 @@ func keccak256(evm *EVM) {
 	newMemCost := calcMemoryGasCost(currentMemSize + memExpansionSize)
 	totalMemExpansionCost := newMemCost - currentMemCost
 
-	minWordSize := toWordSize(size.Uint64())
+	minWordSize := toWordSize(size)
 	staticGas := uint64(30)
 	dynamicGas := 6*minWordSize + totalMemExpansionCost
 	evm.gasDec(staticGas + dynamicGas)
@@ -321,7 +324,7 @@ func calldatacopy(evm *EVM) {
 }
 
 func codesize(evm *EVM) {
-	codesize := uint64(len(evm.Program))
+	codesize := uint64(len(evm.Code))
 	evm.Stack.Push(uint256.NewInt(0).SetUint64(codesize))
 	evm.PC++
 	evm.gasDec(2)
@@ -334,7 +337,7 @@ func codecopy(evm *EVM) {
 
 	destMemOffset, offset, size := destMemOffsetU256.Uint64(), offsetU256.Uint64(), sizeU256.Uint64()
 
-	codeCopy := getData(evm.Program, offset, size)
+	codeCopy := getData(evm.Code, offset, size)
 	memExpansionCost := evm.Memory.Store(destMemOffset, codeCopy)
 
 	minWordSize := toWordSize(size)
@@ -435,4 +438,42 @@ func coinbase(evm *EVM) {
 	evm.Stack.Push(uint256.MustFromHex("0x29045A592007D0C246EF02C2223570DA9522D0CF0F73282C79A1BC8F0BB2C238")) // push a mocked coinbase address
 	evm.PC++
 	evm.gasDec(2)
+}
+
+// Pop & Push opcodes
+func pop(evm *EVM) {
+	_ = evm.Stack.Pop()
+	evm.PC += 2 // Increment the program counter by two to account for the POP opcode and the corresponding item being removed
+	evm.gasDec(2)
+}
+
+func pushN(evm *EVM, size uint64) {
+	if size == 0 {
+		evm.Stack.Push(uint256.NewInt(0))
+		evm.PC += 1
+		evm.gasDec(2)
+		return
+	}
+	if size > 32 {
+		panic("exceeded the maximum allowable size of 32 bytes (full word)")
+	}
+	if size > uint64(len(evm.Code)) {
+		// size = uint64(len(evm.Code)) - 1
+		panic("push size exceeds remaining code size")
+	}
+
+	start := evm.PC + 1
+	end := start + size
+
+	if len(evm.Code) == 1 {
+		panic("code size is one")
+	}
+	if start >= uint64(len(evm.Code)) {
+		panic("invalid push, no code left")
+	}
+	dataBytes := evm.Code[start:end] // hex bytes
+	v := uint256.NewInt(0).SetBytes(dataBytes)
+	evm.Stack.Push(v)
+	evm.PC += size + 1 // Move PC to the next opcode
+	evm.gasDec(3)
 }

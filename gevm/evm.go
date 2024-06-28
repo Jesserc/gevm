@@ -8,13 +8,13 @@ import (
 )
 
 type EVM struct {
-	PC      int
+	PC      uint64
 	Stack   *Stack
 	Memory  *Memory
 	Storage *Storage
 
 	Sender   common.Address // [20]byte, might change to common.Hash?
-	Program  []byte
+	Code     []byte
 	Gas      uint64
 	Value    *uint256.Int
 	Calldata []byte
@@ -33,7 +33,7 @@ func (evm *EVM) gasDec(gas uint64) {
 	evm.Gas -= gas // decrement gas
 }
 
-func NewEVM(sender common.Address, gas uint64, value *uint256.Int, program, calldata []byte) *EVM {
+func NewEVM(sender common.Address, gas uint64, value *uint256.Int, code, calldata []byte) *EVM {
 	return &EVM{
 		PC: 0,
 		Stack: &Stack{
@@ -47,7 +47,7 @@ func NewEVM(sender common.Address, gas uint64, value *uint256.Int, program, call
 			cache: make([]int, 0),
 		},
 		Sender:     sender,
-		Program:    program,
+		Code:       code,
 		Gas:        gas,
 		Value:      value,
 		Calldata:   calldata,

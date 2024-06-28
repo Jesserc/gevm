@@ -19,9 +19,7 @@ func (mem *Memory) Load(offset uint64) []byte {
 	return mem.Access(offset, 32)
 }
 
-func (mem *Memory) Store(offset uint64, value []byte) uint64 {
-	var expansionCost uint64 // memory expansion cost
-
+func (mem *Memory) Store(offset uint64, value []byte) (expansionCost uint64) {
 	// Current memory size and cost
 	currentMemSize := uint64(mem.Len())
 	currentCost := calcMemoryGasCost(uint64(currentMemSize))
