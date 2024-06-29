@@ -484,13 +484,43 @@ func mload(evm *EVM) {
 	offset := offsetU256.Uint64()
 
 	data := evm.Memory.Load(offset)
-	evm.Stack.Push(uint256.NewInt(0).SetBytes32(data))
+	evm.Stack.Push(uint256.NewInt(0).SetBytes(data))
 
 	// Gas cost calculations
-	totalMemExpansionCost := evm.Memory.Store(offset, evm.Memory.Load(offset))
+	memExpansionCost := evm.Memory.Store32(offset, evm.Memory.Load(offset))
 	staticGas := uint64(3)
-	dynamicGas := staticGas + totalMemExpansionCost
-	evm.gasDec(staticGas + dynamicGas)
+	dynamicGas := staticGas + memExpansionCost
+
+	evm.PC++
+	evm.gasDec(dynamicGas)
+}
+
+func mstore(evm *EVM) {
+	offsetU256 := evm.Stack.Pop()
+	valueU256 := evm.Stack.Pop()
+
+	data := make([]byte, 32)
+	v := valueU256.Bytes32()
+	copy(data, v[:])
+
+	memExpansionCost := evm.Memory.Store32(offsetU256.Uint64(), data)
+	staticGas := uint64(3)
+	dynamicGas := staticGas + memExpansionCost
+
+	evm.PC++
+	evm.gasDec(dynamicGas)
+}
+
+func mstore8(evm *EVM) {
+	offsetU256 := evm.Stack.Pop()
+	valueU256 := evm.Stack.Pop()
+
+	memExpansionCost := evm.Memory.Store(offsetU256.Uint64(), valueU256.Bytes()) // valueU256.Bytes() would be just a slice of one byte
+	staticGas := uint64(3)
+	dynamicGas := staticGas + memExpansionCost
+
+	evm.PC++
+	evm.gasDec(dynamicGas)
 }
 
 /*
