@@ -483,7 +483,7 @@ func mload(evm *EVM) {
 	offsetU256 := evm.Stack.Pop()
 	offset := offsetU256.Uint64()
 
-	data := evm.Memory.Load(offset) // we will trim then zeros if any and left pad it before pushing to stack
+	data := evm.Memory.Load(offset)
 	evm.Stack.Push(uint256.NewInt(0).SetBytes32(data))
 
 	// Gas cost calculations
