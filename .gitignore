@@ -21,6 +21,8 @@
 go.work
 go.work.sum
 
-# Dev notes
+# Dev
 Notes.md
 hello.easm
+TODO.txt
+testCodes/*

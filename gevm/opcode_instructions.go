@@ -477,3 +477,35 @@ func pushN(evm *EVM, size uint64) {
 	evm.PC += size + 1 // Move PC to the next opcode
 	evm.gasDec(3)
 }
+
+// Memory operations
+func mload(evm *EVM) {
+	offsetU256 := evm.Stack.Pop()
+	offset := offsetU256.Uint64()
+
+	data := evm.Memory.Load(offset) // we will trim then zeros if any and left pad it before pushing to stack
+	evm.Stack.Push(uint256.NewInt(0).SetBytes32(data))
+
+	// Gas cost calculations
+	totalMemExpansionCost := evm.Memory.Store(offset, evm.Memory.Load(offset))
+	staticGas := uint64(3)
+	dynamicGas := staticGas + totalMemExpansionCost
+	evm.gasDec(staticGas + dynamicGas)
+}
+
+/*
+
+
+	padSize := size // 22
+	fmt.Println("evm code:", evm.Code)
+
+	item := getData(evm.Code, uint64(evm.PC+1), uint64(size))
+	fmt.Println("item before:", item)
+
+	item = common.RightPadBytes(item, int(padSize))
+
+	fmt.Println("item after:", item)
+	evm.Stack.Push(uint256.NewInt(0).SetBytes(item))
+
+
+*/

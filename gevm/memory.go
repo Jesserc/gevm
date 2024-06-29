@@ -5,6 +5,10 @@ type Memory struct {
 }
 
 func (mem *Memory) Access(offset, size uint64) (cpy []byte) {
+	if size == 0 {
+		return nil
+	}
+	
 	if mem.Len() < int(offset+size) {
 		cpy = make([]byte, offset+size)
 		copy(cpy[:], mem.data[:])
