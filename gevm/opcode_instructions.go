@@ -1,6 +1,7 @@
 package gevm
 
 import (
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
 )
@@ -523,19 +524,48 @@ func mstore8(evm *EVM) {
 	evm.gasDec(dynamicGas)
 }
 
-/*
+// Storage operations
+func sload(evm *EVM) {
+	slotU256 := evm.Stack.Pop()
+	isWarm, v := evm.Storage.Load(int(slotU256.Uint64()))
 
+	valueU256 := uint256.NewInt(0).SetBytes32(v[:])
+	evm.Stack.Push(valueU256)
 
-	padSize := size // 22
-	fmt.Println("evm code:", evm.Code)
+	if isWarm {
+		evm.gasDec(100)
+	} else {
+		evm.gasDec(2100)
+	}
+}
 
-	item := getData(evm.Code, uint64(evm.PC+1), uint64(size))
-	fmt.Println("item before:", item)
+func sstore(evm *EVM) {
+	slotU256 := evm.Stack.Pop()
+	valueU256 := evm.Stack.Pop()
 
-	item = common.RightPadBytes(item, int(padSize))
+	v := common.BytesToHash(valueU256.Bytes())
+	isWarm := evm.Storage.Store(int(slotU256.Uint64()), v)
 
-	fmt.Println("item after:", item)
-	evm.Stack.Push(uint256.NewInt(0).SetBytes(item))
+	if isWarm {
+		evm.gasDec(100)
+	} else {
+		evm.gasDec(2100)
+	}
+}
 
+// Transient storage operations
+func tload(evm *EVM) {
+	slotU256 := evm.Stack.Pop()
+	v := evm.Transient.Load(int(slotU256.Uint64()))
+	valueU256 := uint256.NewInt(0).SetBytes32(v[:])
+	evm.Stack.Push(valueU256)
+	evm.gasDec(100)
+}
 
-*/
+func tstore(evm *EVM) {
+	slotU256 := evm.Stack.Pop()
+	valueU256 := evm.Stack.Pop()
+	v := common.BytesToHash(valueU256.Bytes())
+	evm.Transient.Store(int(slotU256.Uint64()), v)
+	evm.gasDec(100)
+}

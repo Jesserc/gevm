@@ -85,5 +85,5 @@ func (mem *Memory) Len() int {
 }
 
 func NewMemory() *Memory {
-	return &Memory{}
+	return &Memory{data: make([]byte, 0)}
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/holiman/uint256"
 )
 
@@ -34,20 +35,28 @@ func (st *Stack) Pop() uint256.Int {
 	return ret
 }
 
+func (st *Stack) Peek() uint256.Int {
+	if len(st.data) == 0 {
+		panic(ErrStackUnderflow.Error())
+	}
+	ret := st.data[len(st.data)-1]
+	return ret
+}
+
 func (st Stack) ToString() string {
 	var d string
 	for i := len(st.data) - 1; i >= 0; i-- {
 		if i == len(st.data)-1 {
-			d += fmt.Sprintf("%v <first\n", st.data[i].String())
+			d += fmt.Sprintf("%v <first\n", hexutil.Encode(st.data[i].Bytes()))
 		} else if i == 0 {
-			d += fmt.Sprintf("%v <last", st.data[i].String())
+			d += fmt.Sprintf("%v <last", hexutil.Encode(st.data[i].Bytes()))
 		} else {
-			d += fmt.Sprintf("%v\n", st.data[i].String())
+			d += fmt.Sprintf("%v\n", hexutil.Encode(st.data[i].Bytes()))
 		}
 	}
 	return d
 }
 
 func NewStack() *Stack {
-	return &Stack{}
+	return &Stack{data: make([]uint256.Int, 0)}
 }

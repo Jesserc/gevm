@@ -8,10 +8,11 @@ import (
 )
 
 type EVM struct {
-	PC      uint64
-	Stack   *Stack
-	Memory  *Memory
-	Storage *Storage
+	PC        uint64
+	Stack     *Stack
+	Memory    *Memory
+	Storage   *Storage
+	Transient *TransientStorage
 
 	Sender   common.Address // [20]byte, might change to common.Hash?
 	Code     []byte
@@ -35,17 +36,11 @@ func (evm *EVM) gasDec(gas uint64) {
 
 func NewEVM(sender common.Address, gas uint64, value *uint256.Int, code, calldata []byte) *EVM {
 	return &EVM{
-		PC: 0,
-		Stack: &Stack{
-			data: make([]uint256.Int, 0),
-		},
-		Memory: &Memory{
-			data: make([]byte, 0),
-		},
-		Storage: &Storage{
-			data:  make(map[int]common.Hash),
-			cache: make([]int, 0),
-		},
+		PC:         0,
+		Stack:      NewStack(),
+		Memory:     NewMemory(),
+		Storage:    NewStorage(),
+		Transient:  NewTransientStorage(),
 		Sender:     sender,
 		Code:       code,
 		Gas:        gas,
