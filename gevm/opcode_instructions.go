@@ -575,3 +575,36 @@ func tstore(evm *EVM) {
 	evm.PC++
 	evm.gasDec(100)
 }
+
+// Jump operations
+func jump(evm *EVM) {
+	newPCU256 := evm.Stack.Pop()
+	newPC := newPCU256.Uint64()
+	if newPC != uint64(JUMPDEST) {
+		panic("Invalid jump destination")
+	}
+	evm.PC = newPC
+	evm.gasDec(8)
+}
+
+func jumpi(evm *EVM) {
+	newPCU256 := evm.Stack.Pop()
+	valueU256 := evm.Stack.Pop()
+
+	newPC := newPCU256.Uint64()
+	if newPC != uint64(JUMPDEST) {
+		panic("Invalid jump destination")
+	}
+
+	if !valueU256.IsZero() {
+		evm.PC = newPC
+	} else {
+		evm.PC++
+	}
+	evm.gasDec(10)
+}
+
+func jumpdest(evm *EVM) {
+	evm.PC++
+	evm.gasDec(1)
+}
