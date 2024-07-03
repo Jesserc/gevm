@@ -246,7 +246,7 @@ func keccak256(evm *EVM) {
 	evm.gasDec(staticGas + dynamicGas)
 }
 
-// Ethereum environment opcodes
+// Ethereum environment (calldata, code, others) operations
 func address(evm *EVM) {
 	evm.Stack.Push(uint256.MustFromHex(evm.Sender.Hex()))
 	evm.PC++
@@ -441,7 +441,7 @@ func coinbase(evm *EVM) {
 	evm.gasDec(2)
 }
 
-// Pop & Push opcodes
+// Pop, Push & Dup operations
 func pop(evm *EVM) {
 	_ = evm.Stack.Pop()
 	evm.PC += 2 // Increment the program counter by two to account for the POP opcode and the corresponding item being removed
@@ -449,6 +449,10 @@ func pop(evm *EVM) {
 }
 
 func pushN(evm *EVM, size uint64) {
+	if size > 32 {
+		panic("Invalid push size, must be less than 32")
+	}
+
 	if size == 0 {
 		evm.Stack.Push(uint256.NewInt(0))
 		evm.PC += 1
@@ -476,6 +480,18 @@ func pushN(evm *EVM, size uint64) {
 	v := uint256.NewInt(0).SetBytes(dataBytes)
 	evm.Stack.Push(v)
 	evm.PC += size + 1 // Move PC to the next opcode
+	evm.gasDec(3)
+}
+
+func dupN(evm *EVM, size uint8) {
+	if size > 16 {
+		panic("Invalid dup size, must be less than 16")
+	}
+
+	valueU256 := evm.Stack.data[size]
+	evm.Stack.Push(&valueU256)
+
+	evm.PC++
 	evm.gasDec(3)
 }
 
