@@ -6,8 +6,23 @@ import (
 	"github.com/holiman/uint256"
 )
 
+// Flow
 func stop(evm *EVM) {
 	evm.StopFlag = true
+}
+
+func revert(evm *EVM) {
+	destMemOffsetU256 := evm.Stack.Pop()
+	sizeU256 := evm.Stack.Pop()
+
+	destMemOffset, size := destMemOffsetU256.Uint64(), sizeU256.Uint64()
+	evm.ReturnData = evm.Memory.Access(destMemOffset, size)
+
+	evm.StopFlag = true
+	evm.RevertFlag = true
+
+	evm.PC++
+	evm.gasDec(0) // just comment out?
 }
 
 // Arithmetic
@@ -441,34 +456,34 @@ func coinbase(evm *EVM) {
 	evm.gasDec(2)
 }
 
-// Pop, Push & Dup operations
+// Pop, Push, Dup & swap operations
 func pop(evm *EVM) {
 	_ = evm.Stack.Pop()
 	evm.PC += 2 // Increment the program counter by two to account for the POP opcode and the corresponding item being removed
 	evm.gasDec(2)
 }
 
-func pushN(evm *EVM, size uint64) {
-	if size > 32 {
+func pushN(evm *EVM, n uint64) {
+	if n > 32 {
 		panic("Invalid push size, must be less than 32")
 	}
 
-	if size == 0 {
+	if n == 0 {
 		evm.Stack.Push(uint256.NewInt(0))
 		evm.PC += 1
 		evm.gasDec(2)
 		return
 	}
-	if size > 32 {
+	if n > 32 {
 		panic("exceeded the maximum allowable size of 32 bytes (full word)")
 	}
-	if size > uint64(len(evm.Code)) {
+	if n > uint64(len(evm.Code)) {
 		// size = uint64(len(evm.Code)) - 1
 		panic("push size exceeds remaining code size")
 	}
 
 	start := evm.PC + 1
-	end := start + size
+	end := start + n
 
 	if len(evm.Code) == 1 {
 		panic("code size is one")
@@ -479,17 +494,27 @@ func pushN(evm *EVM, size uint64) {
 	dataBytes := evm.Code[start:end] // hex bytes
 	v := uint256.NewInt(0).SetBytes(dataBytes)
 	evm.Stack.Push(v)
-	evm.PC += size + 1 // Move PC to the next opcode
+	evm.PC += n + 1 // Move PC to the next opcode
 	evm.gasDec(3)
 }
 
-func dupN(evm *EVM, size uint8) {
-	if size > 16 {
-		panic("Invalid dup size, must be less than 16")
+func dupN(evm *EVM, n uint8) {
+	if n > 16 {
+		panic("Invalid dup size, must be less than or equal 16")
 	}
 
-	valueU256 := evm.Stack.data[size]
+	valueU256 := evm.Stack.data[n]
 	evm.Stack.Push(&valueU256)
+
+	evm.PC++
+	evm.gasDec(3)
+}
+
+func swapN(evm *EVM, n uint8) {
+	if n > 16 {
+		panic("Invalid swap size, must be less than or equal 16")
+	}
+	evm.Stack.data[0], evm.Stack.data[n+1] = evm.Stack.data[n+1], evm.Stack.data[0]
 
 	evm.PC++
 	evm.gasDec(3)
