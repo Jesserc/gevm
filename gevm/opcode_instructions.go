@@ -532,6 +532,7 @@ func sload(evm *EVM) {
 	valueU256 := uint256.NewInt(0).SetBytes32(v[:])
 	evm.Stack.Push(valueU256)
 
+	evm.PC++
 	if isWarm {
 		evm.gasDec(100)
 	} else {
@@ -546,6 +547,7 @@ func sstore(evm *EVM) {
 	v := common.BytesToHash(valueU256.Bytes())
 	isWarm := evm.Storage.Store(int(slotU256.Uint64()), v)
 
+	evm.PC++
 	if isWarm {
 		evm.gasDec(100)
 	} else {
@@ -559,6 +561,8 @@ func tload(evm *EVM) {
 	v := evm.Transient.Load(int(slotU256.Uint64()))
 	valueU256 := uint256.NewInt(0).SetBytes32(v[:])
 	evm.Stack.Push(valueU256)
+
+	evm.PC++
 	evm.gasDec(100)
 }
 
@@ -567,5 +571,7 @@ func tstore(evm *EVM) {
 	valueU256 := evm.Stack.Pop()
 	v := common.BytesToHash(valueU256.Bytes())
 	evm.Transient.Store(int(slotU256.Uint64()), v)
+
+	evm.PC++
 	evm.gasDec(100)
 }
