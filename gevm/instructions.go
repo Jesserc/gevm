@@ -11,20 +11,6 @@ func stop(evm *EVM) {
 	evm.StopFlag = true
 }
 
-func revert(evm *EVM) {
-	destMemOffsetU256 := evm.Stack.Pop()
-	sizeU256 := evm.Stack.Pop()
-
-	destMemOffset, size := destMemOffsetU256.Uint64(), sizeU256.Uint64()
-	evm.ReturnData = evm.Memory.Access(destMemOffset, size)
-
-	evm.StopFlag = true
-	evm.RevertFlag = true
-
-	evm.PC++
-	evm.gasDec(0) // just comment out?
-}
-
 // Arithmetic
 func add(evm *EVM) {
 	a, b := evm.Stack.Pop(), evm.Stack.Pop()
@@ -298,7 +284,7 @@ func caller(evm *EVM) {
 }
 
 func callvalue(evm *EVM) {
-	evm.Stack.Push(evm.Value)
+	evm.Stack.Push(uint256.NewInt(evm.Value))
 	evm.PC++
 	evm.gasDec(2)
 }
@@ -565,6 +551,10 @@ func mstore8(evm *EVM) {
 	evm.gasDec(dynamicGas)
 }
 
+func msize(evm *EVM) {
+	evm.Stack.Push(uint256.NewInt(uint64(evm.Memory.Len())))
+}
+
 // Storage operations
 func sload(evm *EVM) {
 	slotU256 := evm.Stack.Pop()
@@ -648,4 +638,151 @@ func jumpi(evm *EVM) {
 func jumpdest(evm *EVM) {
 	evm.PC++
 	evm.gasDec(1)
+}
+
+// Execution control
+func invalid(evm *EVM) {
+	evm.StopFlag = true
+	evm.Gas = 0 // consume available gas
+}
+
+func revert(evm *EVM) {
+	destMemOffsetU256, sizeU256 := evm.Stack.Pop(), evm.Stack.Pop()
+
+	destMemOffset, size := destMemOffsetU256.Uint64(), sizeU256.Uint64()
+	evm.ReturnData = evm.Memory.Access(destMemOffset, size)
+
+	evm.StopFlag = true
+	evm.RevertFlag = true
+
+	evm.PC++
+	evm.gasDec(0) // just comment out?
+}
+
+// Logging
+func log0(evm *EVM) {
+	offsetU256, sizeU256 := evm.Stack.Pop(), evm.Stack.Pop()
+
+	offset, size := offsetU256.Uint64(), sizeU256.Uint64()
+	data := evm.Memory.Access(offset, size)
+	evm.LogRecord.AddLog([]common.Hash{}, data) // change []common.Hash{} to nil?
+
+	// Gas cost calculations
+	currentMemSize := uint64(evm.Memory.Len())
+	currentMemCost := calcMemoryGasCost(currentMemSize)
+	newMemSize := offset + size
+
+	var memExpansionSize uint64
+	if currentMemSize < newMemSize {
+		memExpansionSize = newMemSize - currentMemSize
+	}
+
+	newMemCost := calcMemoryGasCost(currentMemSize + memExpansionSize)
+	totalMemExpansionCost := newMemCost - currentMemCost
+
+	dynamicGas := calcLogGasCost(0, size, totalMemExpansionCost)
+	evm.gasDec(dynamicGas)
+}
+
+func log1(evm *EVM) {
+	offsetU256, sizeU256, topicU256 := evm.Stack.Pop(), evm.Stack.Pop(), evm.Stack.Pop()
+
+	offset, size := offsetU256.Uint64(), sizeU256.Uint64()
+	data := evm.Memory.Access(offset, size)
+	topic := common.BytesToHash(topicU256.Bytes())
+	evm.LogRecord.AddLog([]common.Hash{topic}, data)
+
+	// Gas cost calculations
+	currentMemSize := uint64(evm.Memory.Len())
+	currentMemCost := calcMemoryGasCost(currentMemSize)
+	newMemSize := offset + size
+
+	var memExpansionSize uint64
+	if currentMemSize < newMemSize {
+		memExpansionSize = newMemSize - currentMemSize
+	}
+
+	newMemCost := calcMemoryGasCost(currentMemSize + memExpansionSize)
+	totalMemExpansionCost := newMemCost - currentMemCost
+
+	dynamicGas := calcLogGasCost(1, size, totalMemExpansionCost)
+	evm.gasDec(dynamicGas)
+}
+
+func log2(evm *EVM) {
+	offsetU256, sizeU256 := evm.Stack.Pop(), evm.Stack.Pop()
+	topic1U256, topic2U256 := evm.Stack.Pop(), evm.Stack.Pop()
+
+	offset, size := offsetU256.Uint64(), sizeU256.Uint64()
+	data := evm.Memory.Access(offset, size)
+	topic1, topic2 := common.BytesToHash(topic1U256.Bytes()), common.BytesToHash(topic2U256.Bytes())
+	evm.LogRecord.AddLog([]common.Hash{topic1, topic2}, data)
+
+	// Gas cost calculations
+	currentMemSize := uint64(evm.Memory.Len())
+	currentMemCost := calcMemoryGasCost(currentMemSize)
+	newMemSize := offset + size
+
+	var memExpansionSize uint64
+	if currentMemSize < newMemSize {
+		memExpansionSize = newMemSize - currentMemSize
+	}
+
+	newMemCost := calcMemoryGasCost(currentMemSize + memExpansionSize)
+	totalMemExpansionCost := newMemCost - currentMemCost
+
+	dynamicGas := calcLogGasCost(2, size, totalMemExpansionCost)
+	evm.gasDec(dynamicGas)
+}
+
+func log3(evm *EVM) {
+	offsetU256, sizeU256 := evm.Stack.Pop(), evm.Stack.Pop()
+	topic1U256, topic2U256, topic3U256 := evm.Stack.Pop(), evm.Stack.Pop(), evm.Stack.Pop()
+
+	offset, size := offsetU256.Uint64(), sizeU256.Uint64()
+	data := evm.Memory.Access(offset, size)
+	topic1, topic2, topic3 := common.BytesToHash(topic1U256.Bytes()), common.BytesToHash(topic2U256.Bytes()), common.BytesToHash(topic3U256.Bytes())
+	evm.LogRecord.AddLog([]common.Hash{topic1, topic2, topic3}, data)
+
+	// Gas cost calculations
+	currentMemSize := uint64(evm.Memory.Len())
+	currentMemCost := calcMemoryGasCost(currentMemSize)
+	newMemSize := offset + size
+
+	var memExpansionSize uint64
+	if currentMemSize < newMemSize {
+		memExpansionSize = newMemSize - currentMemSize
+	}
+
+	newMemCost := calcMemoryGasCost(currentMemSize + memExpansionSize)
+	totalMemExpansionCost := newMemCost - currentMemCost
+
+	dynamicGas := calcLogGasCost(3, size, totalMemExpansionCost)
+	evm.gasDec(dynamicGas)
+}
+
+func log4(evm *EVM) {
+	offsetU256, sizeU256 := evm.Stack.Pop(), evm.Stack.Pop()
+	topic1U256, topic2U256, topic3U256, topic4U256 := evm.Stack.Pop(), evm.Stack.Pop(), evm.Stack.Pop(), evm.Stack.Pop()
+
+	offset, size := offsetU256.Uint64(), sizeU256.Uint64()
+	data := evm.Memory.Access(offset, size)
+	topic1, topic2, topic3, topic4 := common.BytesToHash(topic1U256.Bytes()), common.BytesToHash(topic2U256.Bytes()), common.BytesToHash(topic3U256.Bytes()), common.BytesToHash(topic4U256.Bytes())
+	evm.LogRecord.AddLog([]common.Hash{topic1, topic2, topic3, topic4}, data)
+
+	// Gas cost calculations
+	currentMemSize := uint64(evm.Memory.Len())
+	currentMemCost := calcMemoryGasCost(currentMemSize)
+	newMemSize := offset + size
+
+	var memExpansionSize uint64
+	if currentMemSize < newMemSize {
+		memExpansionSize = newMemSize - currentMemSize
+	}
+
+	newMemCost := calcMemoryGasCost(currentMemSize + memExpansionSize)
+	totalMemExpansionCost := newMemCost - currentMemCost
+
+	dynamicGas := calcLogGasCost(3, size, totalMemExpansionCost)
+	evm.gasDec(dynamicGas)
 }

@@ -32,3 +32,8 @@ func getData(data []byte, start uint64, size uint64) []byte {
 	}
 	return common.RightPadBytes(data[start:end], int(size))
 }
+
+func calcLogGasCost(topicCount, size, memExpansionCost uint64) uint64 {
+	staticGas := uint64(375)
+	return staticGas*topicCount + 8*size + memExpansionCost
+}
