@@ -359,6 +359,13 @@ func gasprice(evm *EVM) {
 	evm.gasDec(2)
 }
 
+// remaining gas (after this instruction).
+func gas(evm *EVM) {
+	evm.gasDec(2) // subtract gas first
+	evm.Stack.Push(uint256.NewInt(evm.Gas - 2))
+	evm.PC++
+}
+
 // This is a mocked version and doesn't behave exactly as it would in a real EVM.
 //
 // extcodesize pushes a mocked code size (0) of an external account onto the stack.
@@ -442,23 +449,33 @@ func coinbase(evm *EVM) {
 	evm.gasDec(2)
 }
 
+func gaslimit(evm *EVM) {
+	evm.Stack.Push(uint256.NewInt(evm.ChainConfig.GasLimit))
+	evm.PC++
+	evm.gasDec(2)
+}
+
+func chainid(evm *EVM) {
+	evm.Stack.Push(uint256.NewInt(evm.ChainConfig.ChainID))
+	evm.PC++
+	evm.gasDec(2)
+}
+
 // Pop, Push, Dup & swap operations
 func pop(evm *EVM) {
 	_ = evm.Stack.Pop()
 	evm.PC += 2 // Increment the program counter by two to account for the POP opcode and the corresponding item being removed
 	evm.gasDec(2)
 }
+func push0(evm *EVM) {
+	evm.Stack.Push(uint256.NewInt(0))
+	evm.PC++
+	evm.gasDec(2)
+}
 
 func pushN(evm *EVM, n uint64) {
 	if n > 32 {
 		panic("Invalid push size, must be less than 32")
-	}
-
-	if n == 0 {
-		evm.Stack.Push(uint256.NewInt(0))
-		evm.PC += 1
-		evm.gasDec(2)
-		return
 	}
 	if n > 32 {
 		panic("exceeded the maximum allowable size of 32 bytes (full word)")
@@ -553,12 +570,14 @@ func mstore8(evm *EVM) {
 
 func msize(evm *EVM) {
 	evm.Stack.Push(uint256.NewInt(uint64(evm.Memory.Len())))
+	evm.PC++
+	evm.gasDec(2)
 }
 
 // Storage operations
 func sload(evm *EVM) {
 	slotU256 := evm.Stack.Pop()
-	isWarm, v := evm.Storage.Load(int(slotU256.Uint64()))
+	v, isWarm := evm.Storage.Load(int(slotU256.Uint64()))
 
 	valueU256 := uint256.NewInt(0).SetBytes32(v[:])
 	evm.Stack.Push(valueU256)
@@ -571,19 +590,21 @@ func sload(evm *EVM) {
 	}
 }
 
-func sstore(evm *EVM) {
+func Sstore(evm *EVM) {
 	slotU256 := evm.Stack.Pop()
 	valueU256 := evm.Stack.Pop()
 
-	v := common.BytesToHash(valueU256.Bytes())
-	isWarm := evm.Storage.Store(int(slotU256.Uint64()), v)
+	slot := int(slotU256.Uint64())
+	newValue := common.BytesToHash(valueU256.Bytes())
 
-	evm.PC++
-	if isWarm {
-		evm.gasDec(100)
-	} else {
-		evm.gasDec(2100)
+	dynamicGas, isWarm := calcSstoreGasCost(evm, slot, newValue)
+	if !isWarm {
+		dynamicGas += 2100
 	}
+
+	evm.Storage.Store(int(slot), newValue)
+	evm.PC++
+	evm.gasDec(dynamicGas)
 }
 
 // Transient storage operations
@@ -635,6 +656,12 @@ func jumpi(evm *EVM) {
 	evm.gasDec(10)
 }
 
+func pc(evm *EVM) {
+	evm.Stack.Push(uint256.NewInt(evm.PC))
+	evm.PC++
+	evm.gasDec(2)
+}
+
 func jumpdest(evm *EVM) {
 	evm.PC++
 	evm.gasDec(1)
@@ -652,11 +679,18 @@ func revert(evm *EVM) {
 	destMemOffset, size := destMemOffsetU256.Uint64(), sizeU256.Uint64()
 	evm.ReturnData = evm.Memory.Access(destMemOffset, size)
 
-	evm.StopFlag = true
 	evm.RevertFlag = true
+	// evm.PC++
+}
 
-	evm.PC++
-	evm.gasDec(0) // just comment out?
+func _return(evm *EVM) {
+	destMemOffsetU256, sizeU256 := evm.Stack.Pop(), evm.Stack.Pop()
+
+	destMemOffset, size := destMemOffsetU256.Uint64(), sizeU256.Uint64()
+	evm.ReturnData = evm.Memory.Access(destMemOffset, size)
+
+	evm.StopFlag = true
+	// evm.PC++
 }
 
 // Logging
@@ -785,4 +819,23 @@ func log4(evm *EVM) {
 
 	dynamicGas := calcLogGasCost(3, size, totalMemExpansionCost)
 	evm.gasDec(dynamicGas)
+}
+
+// This is used in jump_table.go
+func generatePushNFunc(size uint8) func(*EVM) {
+	return func(evm *EVM) {
+		pushN(evm, uint64(size))
+	}
+}
+
+func generateSwapNFunc(index uint8) func(*EVM) {
+	return func(evm *EVM) {
+		swapN(evm, index)
+	}
+}
+
+func generateDupNFunc(index uint8) func(*EVM) {
+	return func(evm *EVM) {
+		dupN(evm, index)
+	}
 }

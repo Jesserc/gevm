@@ -1,5 +1,7 @@
 package gevm
 
+import "fmt"
+
 type Opcode byte
 
 const (
@@ -65,6 +67,7 @@ const (
 	CODESIZE       Opcode = 0x38
 	CODECOPY       Opcode = 0x39
 	GASPRICE       Opcode = 0x3A
+	GAS            Opcode = 0x5A
 	EXTCODESIZE    Opcode = 0x3B
 	EXTCODECOPY    Opcode = 0x3C
 	RETURNDATASIZE Opcode = 0x3D
@@ -91,6 +94,7 @@ const (
 	MLOAD   Opcode = 0x51
 	MSTORE  Opcode = 0x52
 	MSTORE8 Opcode = 0x53
+	MSIZE   Opcode = 0x59
 )
 
 // Storage
@@ -115,6 +119,7 @@ const (
 
 // Push
 const (
+	PUSH0  Opcode = 0x5F
 	PUSH1  Opcode = 0x60
 	PUSH2  Opcode = 0x61
 	PUSH3  Opcode = 0x62
@@ -211,3 +216,300 @@ const (
 	INVALID      Opcode = 0xFE
 	SELFDESTRUCT Opcode = 0xFF
 )
+
+func (op Opcode) String() string {
+	switch op {
+	case STOP:
+		return "STOP"
+	case ADD:
+		return "ADD"
+	case MUL:
+		return "MUL"
+	case SUB:
+		return "SUB"
+	case DIV:
+		return "DIV"
+	case SDIV:
+		return "SDIV"
+	case MOD:
+		return "MOD"
+	case SMOD:
+		return "SMOD"
+	case ADDMOD:
+		return "ADDMOD"
+	case MULMOD:
+		return "MULMOD"
+	case EXP:
+		return "EXP"
+	case SIGNEXTEND:
+		return "SIGNEXTEND"
+	case LT:
+		return "LT"
+	case GT:
+		return "GT"
+	case SLT:
+		return "SLT"
+	case SGT:
+		return "SGT"
+	case EQ:
+		return "EQ"
+	case ISZERO:
+		return "ISZERO"
+	case AND:
+		return "AND"
+	case OR:
+		return "OR"
+	case XOR:
+		return "XOR"
+	case NOT:
+		return "NOT"
+	case BYTE:
+		return "BYTE"
+	case SHL:
+		return "SHL"
+	case SHR:
+		return "SHR"
+	case SAR:
+		return "SAR"
+	case KECCAK256:
+		return "KECCAK256"
+	case ADDRESS:
+		return "ADDRESS"
+	case BALANCE:
+		return "BALANCE"
+	case ORIGIN:
+		return "ORIGIN"
+	case CALLER:
+		return "CALLER"
+	case CALLVALUE:
+		return "CALLVALUE"
+	case CALLDATALOAD:
+		return "CALLDATALOAD"
+	case CALLDATASIZE:
+		return "CALLDATASIZE"
+	case CALLDATACOPY:
+		return "CALLDATACOPY"
+	case CODESIZE:
+		return "CODESIZE"
+	case CODECOPY:
+		return "CODECOPY"
+	case GASPRICE:
+		return "GASPRICE"
+	case EXTCODESIZE:
+		return "EXTCODESIZE"
+	case EXTCODECOPY:
+		return "EXTCODECOPY"
+	case RETURNDATASIZE:
+		return "RETURNDATASIZE"
+	case RETURNDATACOPY:
+		return "RETURNDATACOPY"
+	case EXTCODEHASH:
+		return "EXTCODEHASH"
+	case BLOCKHASH:
+		return "BLOCKHASH"
+	case COINBASE:
+		return "COINBASE"
+	case TIMESTAMP:
+		return "TIMESTAMP"
+	case NUMBER:
+		return "NUMBER"
+	case DIFFICULTY:
+		return "DIFFICULTY"
+	case GASLIMIT:
+		return "GASLIMIT"
+	case CHAINID:
+		return "CHAINID"
+	case SELFBALANCE:
+		return "SELFBALANCE"
+	// case BASEFEE:
+	// 	return "BASEFEE"
+	case POP:
+		return "POP"
+	case MLOAD:
+		return "MLOAD"
+	case MSTORE:
+		return "MSTORE"
+	case MSTORE8:
+		return "MSTORE8"
+	case SLOAD:
+		return "SLOAD"
+	case SSTORE:
+		return "SSTORE"
+	case JUMP:
+		return "JUMP"
+	case JUMPI:
+		return "JUMPI"
+	case PC:
+		return "PC"
+	case MSIZE:
+		return "MSIZE"
+	case GAS:
+		return "GAS"
+	case JUMPDEST:
+		return "JUMPDEST"
+	case PUSH1:
+		return "PUSH1"
+	case PUSH2:
+		return "PUSH2"
+	case PUSH3:
+		return "PUSH3"
+	case PUSH4:
+		return "PUSH4"
+	case PUSH5:
+		return "PUSH5"
+	case PUSH6:
+		return "PUSH6"
+	case PUSH7:
+		return "PUSH7"
+	case PUSH8:
+		return "PUSH8"
+	case PUSH9:
+		return "PUSH9"
+	case PUSH10:
+		return "PUSH10"
+	case PUSH11:
+		return "PUSH11"
+	case PUSH12:
+		return "PUSH12"
+	case PUSH13:
+		return "PUSH13"
+	case PUSH14:
+		return "PUSH14"
+	case PUSH15:
+		return "PUSH15"
+	case PUSH16:
+		return "PUSH16"
+	case PUSH17:
+		return "PUSH17"
+	case PUSH18:
+		return "PUSH18"
+	case PUSH19:
+		return "PUSH19"
+	case PUSH20:
+		return "PUSH20"
+	case PUSH21:
+		return "PUSH21"
+	case PUSH22:
+		return "PUSH22"
+	case PUSH23:
+		return "PUSH23"
+	case PUSH24:
+		return "PUSH24"
+	case PUSH25:
+		return "PUSH25"
+	case PUSH26:
+		return "PUSH26"
+	case PUSH27:
+		return "PUSH27"
+	case PUSH28:
+		return "PUSH28"
+	case PUSH29:
+		return "PUSH29"
+	case PUSH30:
+		return "PUSH30"
+	case PUSH31:
+		return "PUSH31"
+	case PUSH32:
+		return "PUSH32"
+	case DUP1:
+		return "DUP1"
+	case DUP2:
+		return "DUP2"
+	case DUP3:
+		return "DUP3"
+	case DUP4:
+		return "DUP4"
+	case DUP5:
+		return "DUP5"
+	case DUP6:
+		return "DUP6"
+	case DUP7:
+		return "DUP7"
+	case DUP8:
+		return "DUP8"
+	case DUP9:
+		return "DUP9"
+	case DUP10:
+		return "DUP10"
+	case DUP11:
+		return "DUP11"
+	case DUP12:
+		return "DUP12"
+	case DUP13:
+		return "DUP13"
+	case DUP14:
+		return "DUP14"
+	case DUP15:
+		return "DUP15"
+	case DUP16:
+		return "DUP16"
+	case SWAP1:
+		return "SWAP1"
+	case SWAP2:
+		return "SWAP2"
+	case SWAP3:
+		return "SWAP3"
+	case SWAP4:
+		return "SWAP4"
+	case SWAP5:
+		return "SWAP5"
+	case SWAP6:
+		return "SWAP6"
+	case SWAP7:
+		return "SWAP7"
+	case SWAP8:
+		return "SWAP8"
+	case SWAP9:
+		return "SWAP9"
+	case SWAP10:
+		return "SWAP10"
+	case SWAP11:
+		return "SWAP11"
+	case SWAP12:
+		return "SWAP12"
+	case SWAP13:
+		return "SWAP13"
+	case SWAP14:
+		return "SWAP14"
+	case SWAP15:
+		return "SWAP15"
+	case SWAP16:
+		return "SWAP16"
+	case LOG0:
+		return "LOG0"
+	case LOG1:
+		return "LOG1"
+	case LOG2:
+		return "LOG2"
+	case LOG3:
+		return "LOG3"
+	case LOG4:
+		return "LOG4"
+	case CREATE:
+		return "CREATE"
+	case CALL:
+		return "CALL"
+	case CALLCODE:
+		return "CALLCODE"
+	case RETURN:
+		return "RETURN"
+	case DELEGATECALL:
+		return "DELEGATECALL"
+	case CREATE2:
+		return "CREATE2"
+	case STATICCALL:
+		return "STATICCALL"
+	case REVERT:
+		return "REVERT"
+	case INVALID:
+		return "INVALID"
+	case SELFDESTRUCT:
+		return "SELFDESTRUCT"
+	case PUSH0:
+		return "PUSH0"
+	case BASEFEE:
+		return "BASEFEE"
+	default:
+		return fmt.Sprintf("UNKNOWN_OPCODE(0x%x)", byte(op))
+	}
+}

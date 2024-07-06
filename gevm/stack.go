@@ -57,6 +57,10 @@ func (st Stack) ToString() string {
 	return d
 }
 
+func (evm *EVM) Data() []uint256.Int {
+	return evm.Stack.data
+}
+
 func NewStack() *Stack {
 	return &Stack{data: make([]uint256.Int, 0)}
 }

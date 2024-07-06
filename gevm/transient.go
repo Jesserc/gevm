@@ -10,16 +10,13 @@ type TransientStorage struct {
 
 func (s *TransientStorage) Load(key int) common.Hash {
 	if _, ok := s.data[key]; !ok {
-		return common.HexToHash("0x00")
+		return common.Hash{}
 	}
 	return s.data[key]
 }
 
-func (s *TransientStorage) Store(key int, value common.Hash) (isWarm bool) {
-	prev := s.data[key]
+func (s *TransientStorage) Store(key int, value common.Hash) {
 	s.data[key] = value
-	isWarm = prev == value
-	return isWarm
 }
 
 func (s *TransientStorage) Clear() {
