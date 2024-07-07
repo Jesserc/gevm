@@ -86,6 +86,7 @@ func (evm *EVM) Run() {
 		fmt.Println("Gas Cost:", op.Gas())
 		fmt.Println("Memory:", hexutil.Encode(evm.Memory.data))
 		fmt.Println("Storage:", evm.Storage.data)
+		fmt.Println("Return Data:", hexutil.Encode(evm.ReturnData))
 		fmt.Println("PC:", currentPC)
 		fmt.Println()
 	}

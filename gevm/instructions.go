@@ -241,9 +241,9 @@ func keccak256(evm *EVM) {
 	newMemCost := calcMemoryGasCost(currentMemSize + memExpansionSize)
 	totalMemExpansionCost := newMemCost - currentMemCost
 
-	minWordSize := toWordSize(size)
+	wordSize := toWordSize(size)
 	staticGas := uint64(30)
-	dynamicGas := 6*minWordSize + totalMemExpansionCost
+	dynamicGas := 6*wordSize + totalMemExpansionCost
 	evm.gasDec(staticGas + dynamicGas)
 }
 
@@ -317,9 +317,9 @@ func calldatacopy(evm *EVM) {
 	calldata := getData(evm.Calldata, offset, size)
 	memExpansionCost := evm.Memory.Store(destMemOffset, calldata)
 
-	minWordSize := toWordSize(size)
+	wordSize := toWordSize(size)
 	staticGas := uint64(3)
-	dynamicGas := staticGas*minWordSize + memExpansionCost
+	dynamicGas := staticGas*wordSize + memExpansionCost
 
 	evm.PC++
 	evm.gasDec(dynamicGas)
@@ -342,9 +342,9 @@ func codecopy(evm *EVM) {
 	codeCopy := getData(evm.Code, offset, size)
 	memExpansionCost := evm.Memory.Store(destMemOffset, codeCopy)
 
-	minWordSize := toWordSize(size)
+	wordSize := toWordSize(size)
 	staticGas := uint64(3)
-	dynamicGas := staticGas*minWordSize + memExpansionCost
+	dynamicGas := staticGas*wordSize + memExpansionCost
 
 	evm.PC++
 	evm.gasDec(dynamicGas)
@@ -362,7 +362,7 @@ func gasprice(evm *EVM) {
 // remaining gas (after this instruction).
 func gas(evm *EVM) {
 	evm.gasDec(2) // subtract gas first
-	evm.Stack.Push(uint256.NewInt(evm.Gas - 2))
+	evm.Stack.Push(uint256.NewInt(evm.Gas))
 	evm.PC++
 }
 
@@ -390,8 +390,8 @@ func extcodecopy(evm *EVM) {
 	extCodeCopy := []byte{}                                          // mocked (no external code)
 	memExpansionCost := evm.Memory.Store(destMemOffset, extCodeCopy) // extCode has zero length
 
-	minWordSize := toWordSize(size)
-	dynamicGas := 3*minWordSize + memExpansionCost + 2600 // '2600' here represents "address access cost" and can be 100 for warm access, but we are assuming cold access since this is a mocked version.
+	wordSize := toWordSize(size)
+	dynamicGas := 3*wordSize + memExpansionCost + 2600 // '2600' here represents "address access cost" and can be 100 for warm access, but we are assuming cold access since this is a mocked version.
 
 	evm.PC++
 	evm.gasDec(dynamicGas)
@@ -401,7 +401,7 @@ func extcodecopy(evm *EVM) {
 //
 // returndatasize pushes a mocked (zero-value) length of the return data onto the stack.
 func returndatasize(evm *EVM) {
-	evm.Stack.Push(uint256.NewInt(0))
+	evm.Stack.Push(uint256.NewInt(uint64(len(evm.ReturnData))))
 	evm.PC++
 	evm.gasDec(2)
 }
@@ -416,12 +416,12 @@ func returndatacopy(evm *EVM) {
 
 	destMemOffset, size := destMemOffsetU256.Uint64(), sizeU256.Uint64()
 
-	retDataCopy := []byte{}
+	retDataCopy := evm.ReturnData
 	memExpansionCost := evm.Memory.Store(destMemOffset, retDataCopy)
 
-	minWordSize := toWordSize(size)
+	wordSize := toWordSize(size)
 	staticGas := uint64(3)
-	dynamicGas := staticGas*minWordSize + memExpansionCost
+	dynamicGas := staticGas*wordSize + memExpansionCost
 
 	evm.PC++
 	evm.gasDec(dynamicGas)
@@ -475,26 +475,15 @@ func push0(evm *EVM) {
 }
 
 func pushN(evm *EVM, n uint64) {
-	if n > 32 {
-		panic("Invalid push size, must be less than 32")
+	if n < 1 || n > 32 {
+		panic("Invalid push size, must be between 1 and 32")
 	}
-	if n > 32 {
-		panic("exceeded the maximum allowable size of 32 bytes (full word)")
-	}
-	if n > uint64(len(evm.Code)) {
-		// size = uint64(len(evm.Code)) - 1
-		panic("push size exceeds remaining code size")
+	if evm.PC+n >= uint64(len(evm.Code)) {
+		panic("Push size exceeds remaining code size")
 	}
 
 	start := evm.PC + 1
 	end := start + n
-
-	if len(evm.Code) == 1 {
-		panic("code size is one")
-	}
-	if start >= uint64(len(evm.Code)) {
-		panic("invalid push, no code left")
-	}
 	dataBytes := evm.Code[start:end] // hex bytes
 	v := uint256.NewInt(0).SetBytes(dataBytes)
 	evm.Stack.Push(v)
@@ -590,6 +579,24 @@ func msize(evm *EVM) {
 	evm.Stack.Push(uint256.NewInt(uint64(evm.Memory.Len())))
 	evm.PC++
 	evm.gasDec(2)
+}
+
+func mcopy(evm *EVM) {
+	destMemOffsetU256 := evm.Stack.Pop()
+	offsetU256 := evm.Stack.Pop()
+	sizeU256 := evm.Stack.Pop()
+
+	destMemOffset, offset, size := destMemOffsetU256.Uint64(), offsetU256.Uint64(), sizeU256.Uint64()
+
+	memCopy := getData(evm.Memory.data, offset, size)
+	memExpansionCost := evm.Memory.Store(destMemOffset, memCopy)
+
+	wordSize := toWordSize(size)
+	staticGas := uint64(3)
+	dynamicGas := staticGas*wordSize + memExpansionCost
+
+	evm.PC++
+	evm.gasDec(dynamicGas)
 }
 
 // Storage operations
@@ -707,7 +714,6 @@ func _return(evm *EVM) {
 
 	destMemOffset, size := destMemOffsetU256.Uint64(), sizeU256.Uint64()
 	evm.ReturnData = evm.Memory.Access(destMemOffset, size)
-
 	evm.StopFlag = true
 	// evm.PC++
 }

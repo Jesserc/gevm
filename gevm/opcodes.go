@@ -528,7 +528,7 @@ func (op Opcode) Gas() uint64 {
 		return 8
 	case EXP:
 		return 10
-	case KECCAK256:
+	case KECCAK256: // simplified, actual cost depends on context
 		return 30
 	case ADDRESS, ORIGIN, CALLER, CALLVALUE, CALLDATALOAD, CALLDATASIZE, CODESIZE, GASPRICE, RETURNDATASIZE, EXTCODESIZE, BLOCKHASH, COINBASE, TIMESTAMP, NUMBER, DIFFICULTY, GASLIMIT, CHAINID, SELFBALANCE, BASEFEE:
 		return 2
@@ -540,7 +540,7 @@ func (op Opcode) Gas() uint64 {
 		return 400
 	case POP:
 		return 2
-	case MLOAD, MSTORE:
+	case MLOAD, MSTORE: // simplified, actual cost depends on context
 		return 3
 	case MSTORE8:
 		return 3
@@ -592,8 +592,10 @@ func (op Opcode) Gas() uint64 {
 		return 0
 	case SELFDESTRUCT:
 		return 5000 // simplified, actual cost depends on context
-	case 0x5f:
+	case PUSH0:
 		return 2
+	case MCOPY:
+		return 3 // simplified, actual cost depends on context
 	default:
 		return 0
 	}
