@@ -7,6 +7,18 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
+type dynamicGasMap map[Opcode]uint64
+
+func (d dynamicGasMap) Gas(op Opcode) (hasDyGas bool, gas uint64) {
+	gas, hasDyGas = d[op]
+	return hasDyGas, gas
+}
+
+var (
+	dgMap = make(dynamicGasMap)
+)
+
+// ExecutionContext represents the execution context during EVM execution.
 type ExecutionContext struct {
 	PC         uint64
 	Code       []byte
@@ -18,6 +30,7 @@ type ExecutionContext struct {
 	LogRecord  *LogRecord
 }
 
+// ExecutionEnvironment encapsulates the EVM execution environment including the stack, memory, storage, and transient storage.
 type ExecutionEnvironment struct {
 	Stack     *Stack
 	Memory    *Memory
@@ -25,17 +38,20 @@ type ExecutionEnvironment struct {
 	Transient *TransientStorage
 }
 
+// TransactionContext holds transaction-specific information during EVM execution.
 type TransactionContext struct {
 	Sender   common.Address // [20]byte, might change to common.Hash?
 	Value    uint64
 	Calldata []byte
 }
 
+// ChainConfig stores network configuration parameters.
 type ChainConfig struct {
 	ChainID  uint64
 	GasLimit uint64
 }
 
+// EVM represents an Ethereum Virtual Machine instance.
 type EVM struct {
 	ExecutionContext
 	ExecutionEnvironment
@@ -43,8 +59,8 @@ type EVM struct {
 	ChainConfig
 }
 
-func (evm *EVM) gasDec(gas uint64) {
-	if evm.Gas < gas {
+func (evm *EVM) deductGas(gas uint64) {
+	if evm.Gas < gas || evm.Gas <= 0 {
 		panic(fmt.Errorf("out of gas: tried to consume %d gas, but only %d gas remaining", gas, evm.Gas))
 	}
 	evm.Gas -= gas // decrement gas
@@ -83,7 +99,14 @@ func (evm *EVM) Run() {
 		fmt.Println("Opcode:", op)
 		// fmt.Println("Value:",)
 		fmt.Println("Stack:", evm.Stack.ToString())
-		fmt.Println("Gas Cost:", op.Gas())
+		var gCost uint64
+		if has, cost := dgMap.Gas(op); has {
+			gCost = cost
+		} else {
+			gCost = op.Gas()
+		}
+
+		fmt.Println("Gas Cost:", gCost)
 		fmt.Println("Memory:", hexutil.Encode(evm.Memory.data))
 		fmt.Println("Storage:", evm.Storage.data)
 		fmt.Println("Return Data:", hexutil.Encode(evm.ReturnData))
@@ -105,10 +128,10 @@ func (evm *EVM) SubRefund(gas uint64) {
 
 func (evm *EVM) Reset() {
 	//lint:ignore SA4006 ignore unused code warning for this variable
-	evm = New(common.Address{}, 0, 0, 0, 0, []byte{}, []byte{})
+	evm = NewEVM(common.Address{}, 0, 0, 0, 0, []byte{}, []byte{})
 }
 
-func New(sender common.Address, gas, value, chainID, gasLimit uint64, code, calldata []byte) *EVM {
+func NewEVM(sender common.Address, gas, value, chainID, gasLimit uint64, code, calldata []byte) *EVM {
 	return &EVM{
 		ExecutionContext: ExecutionContext{
 			PC:         0,
