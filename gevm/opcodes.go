@@ -95,6 +95,7 @@ const (
 	MSTORE  Opcode = 0x52
 	MSTORE8 Opcode = 0x53
 	MSIZE   Opcode = 0x59
+	MCOPY   Opcode = 0x5e
 )
 
 // Storage
@@ -343,6 +344,8 @@ func (op Opcode) String() string {
 		return "PC"
 	case MSIZE:
 		return "MSIZE"
+	case MCOPY:
+		return "MCOPY"
 	case GAS:
 		return "GAS"
 	case JUMPDEST:
@@ -512,4 +515,87 @@ func (op Opcode) String() string {
 	default:
 		return fmt.Sprintf("UNKNOWN_OPCODE(0x%x)", byte(op))
 	}
+}
+
+func (op Opcode) Gas() uint64 {
+	switch op {
+	case STOP:
+		return 0
+	case ADD, SUB, LT, GT, SLT, SGT, EQ, ISZERO, AND, OR, XOR, NOT, BYTE, SHL, SHR, SAR:
+	case MUL, DIV, SDIV, MOD, SMOD, SIGNEXTEND:
+		return 5
+	case ADDMOD, MULMOD:
+		return 8
+	case EXP:
+		return 10
+	case KECCAK256:
+		return 30
+	case ADDRESS, ORIGIN, CALLER, CALLVALUE, CALLDATALOAD, CALLDATASIZE, CODESIZE, GASPRICE, RETURNDATASIZE, EXTCODESIZE, BLOCKHASH, COINBASE, TIMESTAMP, NUMBER, DIFFICULTY, GASLIMIT, CHAINID, SELFBALANCE, BASEFEE:
+		return 2
+	case BALANCE:
+		return 2600
+	case CALLDATACOPY, CODECOPY, RETURNDATACOPY, EXTCODECOPY:
+		return 3
+	case EXTCODEHASH:
+		return 400
+	case POP:
+		return 2
+	case MLOAD, MSTORE:
+		return 3
+	case MSTORE8:
+		return 3
+	case SLOAD:
+		return 800
+	case SSTORE:
+		return 21000 // simplified, actual cost depends on context
+	case JUMP:
+		return 8
+	case JUMPI:
+		return 10
+	case PC, MSIZE, GAS:
+		return 2
+	case JUMPDEST:
+		return 1
+	case PUSH1, PUSH2, PUSH3, PUSH4, PUSH5, PUSH6, PUSH7, PUSH8, PUSH9, PUSH10, PUSH11, PUSH12, PUSH13, PUSH14, PUSH15, PUSH16, PUSH17, PUSH18, PUSH19, PUSH20, PUSH21, PUSH22, PUSH23, PUSH24, PUSH25, PUSH26, PUSH27, PUSH28, PUSH29, PUSH30, PUSH31, PUSH32:
+		return 3
+	case DUP1, DUP2, DUP3, DUP4, DUP5, DUP6, DUP7, DUP8, DUP9, DUP10, DUP11, DUP12, DUP13, DUP14, DUP15, DUP16:
+		return 3
+	case SWAP1, SWAP2, SWAP3, SWAP4, SWAP5, SWAP6, SWAP7, SWAP8, SWAP9, SWAP10, SWAP11, SWAP12, SWAP13, SWAP14, SWAP15, SWAP16:
+		return 3
+	case LOG0:
+		return 375
+	case LOG1:
+		return 750
+	case LOG2:
+		return 1125
+	case LOG3:
+		return 1500
+	case LOG4:
+		return 1875
+	case CREATE:
+		return 32000
+	case CALL:
+		return 700 // simplified, actual cost depends on context
+	case CALLCODE:
+		return 700 // simplified, actual cost depends on context
+	case RETURN:
+		return 0
+	case DELEGATECALL:
+		return 700 // simplified, actual cost depends on context
+	case CREATE2:
+		return 32000
+	case STATICCALL:
+		return 700 // simplified, actual cost depends on context
+	case REVERT:
+		return 0
+	case INVALID:
+		return 0
+	case SELFDESTRUCT:
+		return 5000 // simplified, actual cost depends on context
+	case 0x5f:
+		return 2
+	default:
+		return 0
+	}
+	return 0
 }

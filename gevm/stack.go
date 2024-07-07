@@ -3,8 +3,8 @@ package gevm
 import (
 	"errors"
 	"fmt"
+	"strings"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/holiman/uint256"
 )
 
@@ -45,13 +45,18 @@ func (st *Stack) Peek() uint256.Int {
 
 func (st Stack) ToString() string {
 	var d string
+	if len(st.data) == 0 {
+		d = "[]"
+		return d
+	}
 	for i := len(st.data) - 1; i >= 0; i-- {
 		if i == len(st.data)-1 {
-			d += fmt.Sprintf("%v <first\n", hexutil.Encode(st.data[i].Bytes()))
-		} else if i == 0 {
-			d += fmt.Sprintf("%v <last", hexutil.Encode(st.data[i].Bytes()))
-		} else {
-			d += fmt.Sprintf("%v\n", hexutil.Encode(st.data[i].Bytes()))
+			d = "["
+		}
+		d += fmt.Sprintf("%v, ", st.data[i].Hex())
+		if i == 0 {
+			d = strings.TrimRight(d, ", ")
+			d += "]"
 		}
 	}
 	return d

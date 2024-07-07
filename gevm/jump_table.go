@@ -54,14 +54,14 @@ func NewJumpTable() JumpTable {
 		GASLIMIT: gaslimit,
 		CHAINID:  chainid,
 		// SELFBALANCE:    selfbalance,
-		// BASEFEE:        basefee,
+		// BASEFEE:  basefee,
 		POP:      pop,
 		PUSH0:    push0,
 		MLOAD:    mload,
 		MSTORE:   mstore,
 		MSTORE8:  mstore8,
 		SLOAD:    sload,
-		SSTORE:   Sstore,
+		SSTORE:   sstore,
 		JUMP:     jump,
 		JUMPI:    jumpi,
 		PC:       pc,
@@ -72,7 +72,6 @@ func NewJumpTable() JumpTable {
 		REVERT:   revert,
 		INVALID:  invalid,
 		// SELFDESTRUCT: selfdestruct,
-		// Add other opcodes and their functions here...
 	}
 
 	// Add PUSH1 to PUSH32 opcodes

@@ -30,7 +30,7 @@ func mul(evm *EVM) {
 	a, b := evm.Stack.Pop(), evm.Stack.Pop()
 	evm.Stack.Push(new(uint256.Int).Mul(&a, &b)) // a * b
 	evm.PC++
-	evm.gasDec(3)
+	evm.gasDec(5)
 }
 
 func div(evm *EVM) {
@@ -464,9 +464,10 @@ func chainid(evm *EVM) {
 // Pop, Push, Dup & swap operations
 func pop(evm *EVM) {
 	_ = evm.Stack.Pop()
-	evm.PC += 2 // Increment the program counter by two to account for the POP opcode and the corresponding item being removed
+	evm.PC++
 	evm.gasDec(2)
 }
+
 func push0(evm *EVM) {
 	evm.Stack.Push(uint256.NewInt(0))
 	evm.PC++
@@ -502,11 +503,21 @@ func pushN(evm *EVM, n uint64) {
 }
 
 func dupN(evm *EVM, n uint8) {
-	if n > 16 {
-		panic("Invalid dup size, must be less than or equal 16")
+	if n < 1 || n > 16 {
+		panic("Invalid dup size, must be between 1 and 16")
 	}
 
-	valueU256 := evm.Stack.data[n]
+	stackLen := len(evm.Stack.data)
+	if stackLen < int(n) {
+		panic("Insufficient stack size for dup operation")
+	}
+	// Access the n-th element from the top of the stack.
+	// The stack is a slice, so elements are appended from the right
+	// Index zero is the last element and index len(stack)-1 is the top and most recent element
+	valueU256 := evm.Stack.data[stackLen-int(n)]
+	// This achieves the same thing as above
+	// valueU256 := evm.Stack.data[uint8(len(evm.Stack.data)-1)-(n-1)]
+
 	evm.Stack.Push(&valueU256)
 
 	evm.PC++
@@ -514,10 +525,17 @@ func dupN(evm *EVM, n uint8) {
 }
 
 func swapN(evm *EVM, n uint8) {
-	if n > 16 {
-		panic("Invalid swap size, must be less than or equal 16")
+	if n < 1 || n > 16 {
+		panic("Invalid swap size, must be between 1 and 16")
 	}
-	evm.Stack.data[0], evm.Stack.data[n+1] = evm.Stack.data[n+1], evm.Stack.data[0]
+
+	stackLen := len(evm.Stack.data)
+	if stackLen < int(n+1) {
+		panic("Insufficient stack size for swap operation")
+	}
+
+	// We do this backward slice
+	evm.Stack.data[stackLen-1], evm.Stack.data[stackLen-int(n+1)] = evm.Stack.data[stackLen-int(n+1)], evm.Stack.data[stackLen-1]
 
 	evm.PC++
 	evm.gasDec(3)
@@ -590,7 +608,7 @@ func sload(evm *EVM) {
 	}
 }
 
-func Sstore(evm *EVM) {
+func sstore(evm *EVM) {
 	slotU256 := evm.Stack.Pop()
 	valueU256 := evm.Stack.Pop()
 
@@ -630,26 +648,27 @@ func tstore(evm *EVM) {
 
 // Jump operations
 func jump(evm *EVM) {
-	newPCU256 := evm.Stack.Pop()
-	newPC := newPCU256.Uint64()
-	if newPC != uint64(JUMPDEST) {
+	newPCIndexU256 := evm.Stack.Pop()
+	newPCIndex := newPCIndexU256.Uint64()
+	if uint64(evm.Code[newPCIndex]) != uint64(JUMPDEST) {
 		panic("Invalid jump destination")
 	}
-	evm.PC = newPC
+	evm.PC = newPCIndex
 	evm.gasDec(8)
 }
 
 func jumpi(evm *EVM) {
-	newPCU256 := evm.Stack.Pop()
+	newPCIndexU256 := evm.Stack.Pop()
 	valueU256 := evm.Stack.Pop()
 
-	newPC := newPCU256.Uint64()
-	if newPC != uint64(JUMPDEST) {
+	newPCIndex := newPCIndexU256.Uint64()
+
+	if uint64(evm.Code[newPCIndex]) != uint64(JUMPDEST) {
 		panic("Invalid jump destination")
 	}
 
 	if !valueU256.IsZero() {
-		evm.PC = newPC
+		evm.PC = newPCIndex
 	} else {
 		evm.PC++
 	}

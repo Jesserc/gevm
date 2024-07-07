@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 type ExecutionContext struct {
@@ -65,21 +66,28 @@ func (evm *EVM) continueExecution() bool {
 }
 
 func (evm *EVM) Run() {
-	jumpTable := NewJumpTable()
-	index := 0
-	for evm.continueExecution() {
-		// fmt.Println("PC:", evm.PC)
-		opcode := evm.Code[evm.PC]
-		opStr := Opcode(opcode).String()
-		index = int(evm.PC)
-		fmt.Printf("%.2v -> %v\n", index, opStr)
+	fmt.Println("#### Trace ####")
 
+	jumpTable := NewJumpTable()
+	for evm.continueExecution() {
+		currentPC := evm.PC
+		opcode := evm.Code[currentPC]
+		op := Opcode(opcode)
 		if opFunc, exists := jumpTable[Opcode(opcode)]; exists {
 			opFunc(evm)
 		} else {
 			fmt.Printf("Unknown opcode: %#x\n", opcode)
 			return
 		}
+
+		fmt.Println("Opcode:", op)
+		// fmt.Println("Value:",)
+		fmt.Println("Stack:", evm.Stack.ToString())
+		fmt.Println("Gas Cost:", op.Gas())
+		fmt.Println("Memory:", hexutil.Encode(evm.Memory.data))
+		fmt.Println("Storage:", evm.Storage.data)
+		fmt.Println("PC:", currentPC)
+		fmt.Println()
 	}
 }
 
