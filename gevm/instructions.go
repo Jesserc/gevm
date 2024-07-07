@@ -35,14 +35,22 @@ func mul(evm *EVM) {
 
 func div(evm *EVM) {
 	a, b := evm.Stack.Pop(), evm.Stack.Pop()
-	evm.Stack.Push(new(uint256.Int).Div(&a, &b)) // a / b, returns 0 if b == 0
+	if b.IsZero() {
+		evm.Stack.Push(uint256.NewInt(0)) // return 0 if b == 0
+	} else {
+		evm.Stack.Push(new(uint256.Int).Div(&a, &b)) // a / b, returns 0 if b == 0
+	}
 	evm.PC++
 	evm.gasDec(5)
 }
 
 func sdiv(evm *EVM) {
 	a, b := evm.Stack.Pop(), evm.Stack.Pop()
-	evm.Stack.Push(new(uint256.Int).SDiv(&a, &b)) // signed a / b, returns 0 if b == 0
+	if b.IsZero() {
+		evm.Stack.Push(uint256.NewInt(0)) // return 0 if b == 0
+	} else {
+		evm.Stack.Push(new(uint256.Int).SDiv(&a, &b)) // signed a / b, returns 0 if b == 0
+	}
 	evm.PC++
 	evm.gasDec(5)
 }
