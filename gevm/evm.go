@@ -2,15 +2,18 @@ package gevm
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
+// dynamicGasMap maps opcodes to their dynamic gas costs.
 type dynamicGasMap map[Opcode]uint64
 
-func (d dynamicGasMap) Gas(op Opcode) (hasDyGas bool, gas uint64) {
-	gas, hasDyGas = d[op]
+// DynamicGas returns the gas cost for a given opcode.
+func (d dynamicGasMap) DynamicGas(op Opcode) (bool, uint64) {
+	gas, hasDyGas := d[op]
 	return hasDyGas, gas
 }
 
@@ -18,8 +21,8 @@ var (
 	dgMap = make(dynamicGasMap)
 )
 
-// ExecutionContext represents the execution context during EVM execution.
-type ExecutionContext struct {
+// ExecutionRuntime represents the execution runtime during EVM execution.
+type ExecutionRuntime struct {
 	PC         uint64
 	Code       []byte
 	Gas        uint64
@@ -28,6 +31,7 @@ type ExecutionContext struct {
 	RevertFlag bool
 	ReturnData []byte
 	LogRecord  *LogRecord
+	Block      *Block
 }
 
 // ExecutionEnvironment encapsulates the EVM execution environment including the stack, memory, storage, and transient storage.
@@ -51,9 +55,29 @@ type ChainConfig struct {
 	GasLimit uint64
 }
 
+// Block represents a block.
+type Block struct {
+	Coinbase   common.Address
+	GasPrice   uint64
+	Number     uint64
+	Timestamp  time.Time
+	BaseFee    uint64
+}
+
+// NewBlock creates a new block instance.
+func NewBlock(coinbase common.Address, gasPrice, number, difficulty, baseFee uint64, timeStamp time.Time) *Block {
+	return &Block{
+		Coinbase:   coinbase,
+		GasPrice:   gasPrice,
+		Number:     number,
+		Timestamp:  timeStamp,
+		BaseFee:    baseFee,
+	}
+}
+
 // EVM represents an Ethereum Virtual Machine instance.
 type EVM struct {
-	ExecutionContext
+	ExecutionRuntime
 	ExecutionEnvironment
 	TransactionContext
 	ChainConfig
@@ -63,77 +87,59 @@ func (evm *EVM) deductGas(gas uint64) {
 	if evm.Gas < gas || evm.Gas <= 0 {
 		panic(fmt.Errorf("out of gas: tried to consume %d gas, but only %d gas remaining", gas, evm.Gas))
 	}
-	evm.Gas -= gas // decrement gas
+	evm.Gas -= gas // deduct gas
 }
+
+// continueExecution checks if the EVM should continue execution.
 func (evm *EVM) continueExecution() bool {
-	if int(evm.PC) > len(evm.Code)-1 {
-		return false
-	}
-	if evm.StopFlag {
-		return false
-	}
-	if evm.RevertFlag {
-		return false
-	}
-	if evm.Gas == 0 {
-		return false
-	}
-	return true
+	return int(evm.PC) <= len(evm.Code)-1 && !evm.StopFlag && !evm.RevertFlag /* && evm.Gas > 0 */
 }
 
 func (evm *EVM) Run() {
 	fmt.Println("#### Trace ####")
 
+	// Jump table
 	jumpTable := NewJumpTable()
+	var totalGasUsed uint64
+
 	for evm.continueExecution() {
 		currentPC := evm.PC
 		opcode := evm.Code[currentPC]
 		op := Opcode(opcode)
-		if opFunc, exists := jumpTable[Opcode(opcode)]; exists {
+		if opFunc, exists := jumpTable[op]; exists {
 			opFunc(evm)
 		} else {
 			fmt.Printf("Unknown opcode: %#x\n", opcode)
 			return
 		}
 
-		fmt.Println("Opcode:", op)
-		// fmt.Println("Value:",)
-		fmt.Println("Stack:", evm.Stack.ToString())
 		var gCost uint64
-		if has, cost := dgMap.Gas(op); has {
+		if has, cost := dgMap.DynamicGas(op); has {
 			gCost = cost
 		} else {
 			gCost = op.Gas()
 		}
-
-		fmt.Println("Gas Cost:", gCost)
-		fmt.Println("Memory:", hexutil.Encode(evm.Memory.data))
-		fmt.Println("Storage:", evm.Storage.data)
-		fmt.Println("Return Data:", hexutil.Encode(evm.ReturnData))
-		fmt.Println("PC:", currentPC)
-		fmt.Println()
+		totalGasUsed += gCost
+		logEVMState(evm, op, gCost, currentPC)
 	}
+	totalGasUsed -= evm.Refund // minus refund, if any
+	LogEVMLogs(totalGasUsed, evm)
 }
 
-func (evm *EVM) AddRefund(refund uint64) {
+func (evm *EVM) addRefund(refund uint64) {
 	evm.Refund += refund
 }
 
-func (evm *EVM) SubRefund(gas uint64) {
+func (evm *EVM) subRefund(gas uint64) {
 	if gas > evm.Refund {
 		panic(fmt.Sprintf("Refund counter below zero (gas: %d > refund: %d)", gas, evm.Refund))
 	}
 	evm.Refund -= gas
 }
 
-func (evm *EVM) Reset() {
-	//lint:ignore SA4006 ignore unused code warning for this variable
-	evm = NewEVM(common.Address{}, 0, 0, 0, 0, []byte{}, []byte{})
-}
-
-func NewEVM(sender common.Address, gas, value, chainID, gasLimit uint64, code, calldata []byte) *EVM {
+func NewEVM(sender common.Address, gas, value, chainID, gasLimit uint64, code, calldata []byte, blockInfo *Block) *EVM {
 	return &EVM{
-		ExecutionContext: ExecutionContext{
+		ExecutionRuntime: ExecutionRuntime{
 			PC:         0,
 			Code:       []byte{},
 			Gas:        gas,
@@ -141,7 +147,8 @@ func NewEVM(sender common.Address, gas, value, chainID, gasLimit uint64, code, c
 			StopFlag:   false,
 			RevertFlag: false,
 			ReturnData: []byte{},
-			LogRecord:  nil,
+			LogRecord:  NewLogRecord(),
+			Block:      blockInfo,
 		},
 		ExecutionEnvironment: ExecutionEnvironment{
 			Stack:     NewStack(),
@@ -159,4 +166,29 @@ func NewEVM(sender common.Address, gas, value, chainID, gasLimit uint64, code, c
 			GasLimit: gas,
 		},
 	}
+}
+
+func logEVMState(evm *EVM, op Opcode, gasCost uint64, currentPC uint64) {
+	fmt.Println("Opcode:", op)
+	fmt.Println("Stack:", evm.Stack.ToString())
+	fmt.Println("Gas Cost:", gasCost)
+	fmt.Println("Memory:", hexutil.Encode(evm.Memory.data))
+	fmt.Println("Storage:", evm.Storage.data)
+	fmt.Println("Return Data:", hexutil.Encode(evm.ReturnData))
+	fmt.Println("PC:", currentPC)
+	fmt.Println()
+	// fmt.Println("Value:")
+}
+
+func LogEVMLogs(totalGasUsed uint64, evm *EVM) {
+	fmt.Println("#### LOGS ####")
+	fmt.Println("Total gas used:", totalGasUsed)
+	fmt.Println("Total memory allocations:", toWordSize(uint64(len(evm.Memory.data))))
+	fmt.Println("Allocated bytes in memory:", len(evm.Memory.data))
+	fmt.Println("Total storage allocations:", len(evm.Storage.data))
+	fmt.Println("Total storage gas refund:", evm.Refund)
+	fmt.Println("Logs:\n", evm.LogRecord)
+	fmt.Println("Chain ID:", evm.ChainID)
+	fmt.Println("Gas Limit:", evm.GasLimit)
+	fmt.Println("Coinbase:", evm.Block.Coinbase)
 }
