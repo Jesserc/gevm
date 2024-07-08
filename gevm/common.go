@@ -41,7 +41,7 @@ func calcSstoreGasCost(evm *EVM, slot int, newValue common.Hash) (_ uint64, isWa
 	// If the current value is non-zero and the new value is zero,
 	// it's a deletion of a slot, adding a refund of 15,000 gas.
 	if currentValue != (common.Hash{}) && newValue == (common.Hash{}) {
-		evm.AddRefund(15_000)
+		evm.addRefund(15_000)
 		return 5000, isWarm
 	}
 
