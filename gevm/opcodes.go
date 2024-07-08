@@ -77,7 +77,7 @@ const (
 	COINBASE       Opcode = 0x41
 	TIMESTAMP      Opcode = 0x42
 	NUMBER         Opcode = 0x43
-	DIFFICULTY     Opcode = 0x44
+	PREVRANDAO     Opcode = 0x44
 	GASLIMIT       Opcode = 0x45
 	CHAINID        Opcode = 0x46
 	SELFBALANCE    Opcode = 0x47
@@ -314,16 +314,16 @@ func (op Opcode) String() string {
 		return "TIMESTAMP"
 	case NUMBER:
 		return "NUMBER"
-	case DIFFICULTY:
-		return "DIFFICULTY"
+	case PREVRANDAO:
+		return "PREVRANDAO"
 	case GASLIMIT:
 		return "GASLIMIT"
 	case CHAINID:
 		return "CHAINID"
 	case SELFBALANCE:
 		return "SELFBALANCE"
-	// case BASEFEE:
-	// 	return "BASEFEE"
+	case BASEFEE:
+		return "BASEFEE"
 	case POP:
 		return "POP"
 	case MLOAD:
@@ -510,8 +510,6 @@ func (op Opcode) String() string {
 		return "SELFDESTRUCT"
 	case PUSH0:
 		return "PUSH0"
-	case BASEFEE:
-		return "BASEFEE"
 	default:
 		return fmt.Sprintf("UNKNOWN_OPCODE(0x%x)", byte(op))
 	}
@@ -530,7 +528,7 @@ func (op Opcode) Gas() uint64 {
 		return 10
 	case KECCAK256: // simplified, actual cost depends on context
 		return 30
-	case ADDRESS, ORIGIN, CALLER, CALLVALUE, CALLDATALOAD, CALLDATASIZE, CODESIZE, GASPRICE, RETURNDATASIZE, EXTCODESIZE, BLOCKHASH, COINBASE, TIMESTAMP, NUMBER, DIFFICULTY, GASLIMIT, CHAINID, SELFBALANCE, BASEFEE:
+	case ADDRESS, ORIGIN, CALLER, CALLVALUE, CALLDATALOAD, CALLDATASIZE, CODESIZE, GASPRICE, RETURNDATASIZE, EXTCODESIZE, BLOCKHASH, COINBASE, TIMESTAMP, NUMBER, PREVRANDAO, GASLIMIT, CHAINID, SELFBALANCE, BASEFEE:
 		return 2
 	case BALANCE:
 		return 2600
