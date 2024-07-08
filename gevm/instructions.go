@@ -1,6 +1,9 @@
 package gevm
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
@@ -362,11 +365,10 @@ func codecopy(evm *EVM) {
 	dgMap[CODECOPY] = dynamicGas
 }
 
-// This is a mocked version and doesn't behave exactly as it would in a real EVM.
-//
 // gasprice pushes a mocked gas price (0) onto the stack.
 func gasprice(evm *EVM) {
-	evm.Stack.Push(uint256.NewInt(0)) // push 0x0
+	gasPrice := uint256.NewInt(evm.Block.GasPrice)
+	evm.Stack.Push(gasPrice)
 	evm.PC++
 	evm.deductGas(2)
 }
@@ -374,7 +376,8 @@ func gasprice(evm *EVM) {
 // remaining gas (after this instruction).
 func gas(evm *EVM) {
 	evm.deductGas(2) // subtract gas first
-	evm.Stack.Push(uint256.NewInt(evm.Gas))
+	gasLeft := uint256.NewInt(evm.Gas)
+	evm.Stack.Push(gasLeft)
 	evm.PC++
 }
 
@@ -410,17 +413,14 @@ func extcodecopy(evm *EVM) {
 	dgMap[EXTCODECOPY] = dynamicGas
 }
 
-// This is a mocked version and doesn't behave exactly as it would in a real EVM.
-//
 // returndatasize pushes a mocked (zero-value) length of the return data onto the stack.
 func returndatasize(evm *EVM) {
-	evm.Stack.Push(uint256.NewInt(uint64(len(evm.ReturnData))))
+	returnDataSize := uint256.NewInt(uint64(len(evm.ReturnData)))
+	evm.Stack.Push(returnDataSize)
 	evm.PC++
 	evm.deductGas(2)
 }
 
-// This is a mocked version and doesn't behave exactly as it would in a real EVM.
-//
 // returndatacopy copies a zero-length mocked return data byte slice to memory
 func returndatacopy(evm *EVM) {
 	destMemOffsetU256 := evm.Stack.Pop()
@@ -441,24 +441,51 @@ func returndatacopy(evm *EVM) {
 	dgMap[RETURNDATACOPY] = dynamicGas
 }
 
-// This is a mocked version and doesn't behave exactly as it would in a real EVM.
+// blockhash pushes a mocked hash of the current block onto the stack.
 //
-// blockhash pushes the hash (mocked hash) of one of the 256 most recent complete blocks onto the stack.
+// Normally, this would be the hash of one of the 256 most recent blocks given by a block number, but for simplicity, we always use the current block.
 func blockhash(evm *EVM) {
 	blockNumU256 := evm.Stack.Pop()
 	if blockNumU256.Uint64() > 256 {
 		panic("Only the last 256 blocks can be accessed")
 	}
-	evm.Stack.Push(uint256.MustFromHex("0x29045A592007D0C246EF02C2223570DA9522D0CF0F73282C79A1BC8F0BB2C238")) // push a mocked block hash
+
+	blockBytes, err := json.Marshal(evm.Block)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to marshal block to JSON bytes: %v", err))
+	}
+	hash := crypto.Keccak256(blockBytes)
+	evm.Stack.Push(uint256.NewInt(0).SetBytes(hash))
 	evm.PC++
 	evm.deductGas(20)
 }
 
-// This is a mocked version and doesn't behave exactly as it would in a real EVM.
-//
 // coinbase pushes a block’s beneficiary address onto the stack.
 func coinbase(evm *EVM) {
-	evm.Stack.Push(uint256.MustFromHex("0x29045A592007D0C246EF02C2223570DA9522D0CF0F73282C79A1BC8F0BB2C238")) // push a mocked coinbase address
+	coinBase := uint256.NewInt(0).SetBytes32(evm.Block.Coinbase[:])
+	evm.Stack.Push(coinBase)
+	evm.PC++
+	evm.deductGas(2)
+}
+
+func timestamp(evm *EVM) {
+	timeStamp := uint256.NewInt(uint64(evm.Block.Timestamp.Unix()))
+	evm.Stack.Push(timeStamp)
+	evm.PC++
+	evm.deductGas(2)
+}
+
+func number(evm *EVM) {
+	number := uint256.NewInt(uint64(evm.Block.Number))
+	evm.Stack.Push(number)
+	evm.PC++
+	evm.deductGas(2)
+}
+
+// func selfbalance(evm *EVM) {}
+func basefee(evm *EVM) {
+	baseFee := uint256.NewInt(uint64(evm.Block.BaseFee))
+	evm.Stack.Push(baseFee)
 	evm.PC++
 	evm.deductGas(2)
 }
