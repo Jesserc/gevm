@@ -20,8 +20,7 @@ func (s *TransientStorage) Store(key int, value common.Hash) {
 }
 
 func (s *TransientStorage) Clear() {
-	//lint:ignore SA4006 ignore unused code warning for this variable
-	s = NewTransientStorage()
+	*s = *NewTransientStorage()
 }
 
 func NewTransientStorage() *TransientStorage {
