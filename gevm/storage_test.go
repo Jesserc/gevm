@@ -10,7 +10,7 @@ import (
 func TestStorage(t *testing.T) {
 	tests := []struct {
 		name      string
-		testFunc  func(*Storage) (any, any)
+		testFunc  func(*Storage) (any, any) // I use (any, any) and not (common.Hash, bool) because the last test case returns (bool, bool)
 		expected  any
 		expected2 any
 	}{
