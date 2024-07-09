@@ -11,7 +11,7 @@ import (
 
 func setupEVM() *EVM {
 	block := NewBlock(common.HexToAddress("0x"), 2, 1, 0, 1, time.Now())
-	return NewEVM(common.HexToAddress("0x"), 100000, 2e5, 1, 8000000, []byte{}, []byte{}, block)
+	return NewEVM(common.HexToAddress("0x"), 1000, 2e5, 1, 8000000, []byte{}, []byte{}, block)
 }
 
 // Table-driven tests for EVM operations
