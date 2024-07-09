@@ -526,7 +526,7 @@ func (op Opcode) Gas() uint64 {
 		return 8
 	case EXP:
 		return 10
-	case KECCAK256: // simplified, actual cost depends on context
+	case KECCAK256: // If supported, the actual gas cost will be stored in the dgMap (dynamic gas map) in evm.go
 		return 30
 	case ADDRESS, ORIGIN, CALLER, CALLVALUE, CALLDATALOAD, CALLDATASIZE, CODESIZE, GASPRICE, RETURNDATASIZE, EXTCODESIZE, BLOCKHASH, COINBASE, TIMESTAMP, NUMBER, PREVRANDAO, GASLIMIT, CHAINID, SELFBALANCE, BASEFEE:
 		return 2
@@ -538,14 +538,14 @@ func (op Opcode) Gas() uint64 {
 		return 400
 	case POP:
 		return 2
-	case MLOAD, MSTORE: // simplified, actual cost depends on context
+	case MLOAD, MSTORE: // If supported, the actual gas cost will be stored in the dgMap (dynamic gas map) in evm.go
 		return 3
 	case MSTORE8:
 		return 3
 	case SLOAD:
 		return 800
 	case SSTORE:
-		return 21000 // simplified, actual cost depends on context
+		return 21000 // If supported, the actual gas cost will be stored in the dgMap (dynamic gas map) in evm.go
 	case JUMP:
 		return 8
 	case JUMPI:
@@ -573,27 +573,27 @@ func (op Opcode) Gas() uint64 {
 	case CREATE:
 		return 32000
 	case CALL:
-		return 700 // simplified, actual cost depends on context
+		return 700 // If supported, the actual gas cost will be stored in the dgMap (dynamic gas map) in evm.go
 	case CALLCODE:
-		return 700 // simplified, actual cost depends on context
+		return 700 // If supported, the actual gas cost will be stored in the dgMap (dynamic gas map) in evm.go
 	case RETURN:
 		return 0
 	case DELEGATECALL:
-		return 700 // simplified, actual cost depends on context
+		return 700 // If supported, the actual gas cost will be stored in the dgMap (dynamic gas map) in evm.go
 	case CREATE2:
 		return 32000
 	case STATICCALL:
-		return 700 // simplified, actual cost depends on context
+		return 700 // If supported, the actual gas cost will be stored in the dgMap (dynamic gas map) in evm.go
 	case REVERT:
 		return 0
 	case INVALID:
 		return 0
 	case SELFDESTRUCT:
-		return 5000 // simplified, actual cost depends on context
+		return 5000 // If supported, the actual gas cost will be stored in the dgMap (dynamic gas map) in evm.go
 	case PUSH0:
 		return 2
 	case MCOPY:
-		return 3 // simplified, actual cost depends on context
+		return 3 // If supported, the actual gas cost will be stored in the dgMap (dynamic gas map) in evm.go
 	default:
 		return 0
 	}
