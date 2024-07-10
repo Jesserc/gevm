@@ -7,6 +7,12 @@ An Ethereum Virtual Machine (EVM) implementation from scratch, written in Go.
 
 This project is an isolated EVM implementation, meaning it has no state for accounts. However, memory, storage, and event logs are tracked, although everything resets after each EVM execution.
 
+## Prerequisites
+
+- The Go programming language should be installed: https://go.dev/dl/
+- Ethereum Virtual Machine: https://ethereum.org/en/developers/docs/evm/
+- EVM opcodes: https://www.evm.codes/
+
 ## Running the EVM
 
 To run the EVM:
