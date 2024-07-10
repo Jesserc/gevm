@@ -29,10 +29,11 @@ To run the EVM:
 
    Some simple example bytecodes are provided.
    There is also an example from an actual compiled contract, which is commented out. Uncomment it to run it.
+   ![alt text](images/image.png)
 
 ## Dynamic Gas Calculation
 
-Dynamic gas calculation is supported (memory expansion cost and storage operations). Functions for this are located in `gevm/common.go`, and the `dgMap[Opcode]uint64` holds records of each opcode that has dynamic gas. The dynamic gas is calculated at runtime for any opcode that has dynamic gas during execution, and the `dgMap` is updated to store this gas cost.
+Dynamic gas calculation is supported (memory expansion cost and storage operations). Functions for this are located in `gevm/common.go`, and the `dgMap[Opcode]uint64` in `gevm/evm.go` holds records of each opcode that has dynamic gas. The dynamic gas is calculated at runtime for any opcode that has dynamic gas during execution, and the `dgMap` is updated to store this gas cost.
 
 ## EVM Structure
 
