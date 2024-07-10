@@ -26,7 +26,7 @@ To run the EVM:
 
 ## Dynamic Gas Calculation
 
-Dynamic gas calculation is supported (memory expansion cost and storage operations). Functions for this are located in common.go, and the `dgMap[Opcode]uint64` holds records of each opcode that has dynamic gas. The dynamic gas is calculated at runtime for any opcode that has dynamic gas during execution, and the `dgMap` is updated to store this gas cost.
+Dynamic gas calculation is supported (memory expansion cost and storage operations). Functions for this are located in `gevm/common.go`, and the `dgMap[Opcode]uint64` holds records of each opcode that has dynamic gas. The dynamic gas is calculated at runtime for any opcode that has dynamic gas during execution, and the `dgMap` is updated to store this gas cost.
 
 ## EVM Structure
 
@@ -125,4 +125,4 @@ These opcodes typically require state management. All other opcodes are supporte
 
 ## Contributing
 
-Contributions are welcome! Please feel free to create and issue or submit a pull request.
+Contributions are welcome! Please feel free to create an issue or submit a pull request.
