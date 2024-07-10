@@ -129,6 +129,11 @@ The following opcodes are not supported:
 
 These opcodes typically require state management. All other opcodes are supported, including EIP-1153 transient storage opcodes `TLOAD` and `TSTORE`.
 
+## Resources
+
+- EVM opcodes (highly recommended, has accurate gas costs for opcodes): https://www.evm.codes/
+- EVM from scratch book: https://evm-from-scratch.xyz/
+
 ## Contributing
 
 Contributions are welcome! Please feel free to create an issue or submit a pull request.
