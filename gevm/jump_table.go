@@ -1,7 +1,9 @@
 package gevm
 
+// JumpTable maps opcodes to their corresponding instruction functions.
 type JumpTable map[Opcode]func(*EVM)
 
+// NewJumpTable creates and returns a new JumpTable for the EVM.
 func NewJumpTable() JumpTable {
 	jumpTable := map[Opcode]func(*EVM){
 		STOP:           stop,
@@ -42,6 +44,7 @@ func NewJumpTable() JumpTable {
 		CODESIZE:       codesize,
 		CODECOPY:       codecopy,
 		GASPRICE:       gasprice,
+		GAS:            gas,
 		EXTCODESIZE:    extcodesize,
 		EXTCODECOPY:    extcodecopy,
 		RETURNDATASIZE: returndatasize,
@@ -50,9 +53,9 @@ func NewJumpTable() JumpTable {
 		COINBASE:       coinbase,
 		TIMESTAMP:      timestamp,
 		NUMBER:         number,
+		BASEFEE:        basefee,
 		GASLIMIT:       gaslimit,
 		CHAINID:        chainid,
-		BASEFEE:        basefee,
 		POP:            pop,
 		PUSH0:          push0,
 		MLOAD:          mload,
@@ -62,14 +65,15 @@ func NewJumpTable() JumpTable {
 		MCOPY:          mcopy,
 		SLOAD:          sload,
 		SSTORE:         sstore,
+		TLOAD:          tload,
+		TSTORE:         tstore,
 		JUMP:           jump,
 		JUMPI:          jumpi,
 		PC:             pc,
-		GAS:            gas,
 		JUMPDEST:       jumpdest,
-		RETURN:         _return,
-		REVERT:         revert,
 		INVALID:        invalid,
+		REVERT:         revert,
+		RETURN:         _return,
 		LOG0:           log0,
 		LOG1:           log1,
 		LOG2:           log2,

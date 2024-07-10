@@ -264,7 +264,7 @@ func keccak256(evm *EVM) {
 func address(evm *EVM) {
 	evm.Stack.Push(uint256.MustFromHex(evm.Sender.Hex()))
 	evm.PC++
-	evm.deductGas(3)
+	evm.deductGas(2)
 }
 
 // This is a mocked version and doesn't behave exactly as it would in a real EVM.
@@ -302,6 +302,13 @@ func callvalue(evm *EVM) {
 	evm.deductGas(2)
 }
 
+func calldatasize(evm *EVM) {
+	calldatasize := uint64(len(evm.Calldata))
+	evm.Stack.Push(uint256.NewInt(calldatasize))
+	evm.PC++
+	evm.deductGas(2)
+}
+
 func calldataload(evm *EVM) {
 	offsetU256 := evm.Stack.Pop()
 	offset := offsetU256.Uint64()
@@ -311,13 +318,6 @@ func calldataload(evm *EVM) {
 	evm.Stack.Push(uint256.NewInt(0).SetBytes(calldata))
 	evm.PC++
 	evm.deductGas(3)
-}
-
-func calldatasize(evm *EVM) {
-	calldatasize := uint64(len(evm.Calldata))
-	evm.Stack.Push(uint256.NewInt(calldatasize))
-	evm.PC++
-	evm.deductGas(2)
 }
 
 func calldatacopy(evm *EVM) {
@@ -482,7 +482,6 @@ func number(evm *EVM) {
 	evm.deductGas(2)
 }
 
-// func selfbalance(evm *EVM) {}
 func basefee(evm *EVM) {
 	baseFee := uint256.NewInt(uint64(evm.Block.BaseFee))
 	evm.Stack.Push(baseFee)

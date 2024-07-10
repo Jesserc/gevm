@@ -336,6 +336,10 @@ func (op Opcode) String() string {
 		return "SLOAD"
 	case SSTORE:
 		return "SSTORE"
+	case TLOAD:
+		return "TLOAD"
+	case TSTORE:
+		return "TSTORE"
 	case JUMP:
 		return "JUMP"
 	case JUMPI:
@@ -520,6 +524,7 @@ func (op Opcode) Gas() uint64 {
 	case STOP:
 		return 0
 	case ADD, SUB, LT, GT, SLT, SGT, EQ, ISZERO, AND, OR, XOR, NOT, BYTE, SHL, SHR, SAR:
+		return 3
 	case MUL, DIV, SDIV, MOD, SMOD, SIGNEXTEND:
 		return 5
 	case ADDMOD, MULMOD:
@@ -528,11 +533,11 @@ func (op Opcode) Gas() uint64 {
 		return 10
 	case KECCAK256: // If supported, the actual gas cost will be stored in the dgMap (dynamic gas map) in evm.go
 		return 30
-	case ADDRESS, ORIGIN, CALLER, CALLVALUE, CALLDATALOAD, CALLDATASIZE, CODESIZE, GASPRICE, RETURNDATASIZE, EXTCODESIZE, BLOCKHASH, COINBASE, TIMESTAMP, NUMBER, PREVRANDAO, GASLIMIT, CHAINID, SELFBALANCE, BASEFEE:
+	case ADDRESS, ORIGIN, CALLER, CALLVALUE, CALLDATASIZE, CODESIZE, GASPRICE, RETURNDATASIZE, EXTCODESIZE, BLOCKHASH, COINBASE, TIMESTAMP, NUMBER, PREVRANDAO, GASLIMIT, CHAINID, SELFBALANCE, BASEFEE:
 		return 2
 	case BALANCE:
 		return 2600
-	case CALLDATACOPY, CODECOPY, RETURNDATACOPY, EXTCODECOPY:
+	case CALLDATALOAD, CALLDATACOPY, CODECOPY, RETURNDATACOPY, EXTCODECOPY:
 		return 3
 	case EXTCODEHASH:
 		return 400
@@ -541,11 +546,15 @@ func (op Opcode) Gas() uint64 {
 	case MLOAD, MSTORE: // If supported, the actual gas cost will be stored in the dgMap (dynamic gas map) in evm.go
 		return 3
 	case MSTORE8:
-		return 3
+		return 3 // If supported, the actual gas cost will be stored in the dgMap (dynamic gas map) in evm.go
 	case SLOAD:
 		return 800
 	case SSTORE:
 		return 21000 // If supported, the actual gas cost will be stored in the dgMap (dynamic gas map) in evm.go
+	case TLOAD:
+		return 100
+	case TSTORE:
+		return 100
 	case JUMP:
 		return 8
 	case JUMPI:
@@ -577,7 +586,7 @@ func (op Opcode) Gas() uint64 {
 	case CALLCODE:
 		return 700 // If supported, the actual gas cost will be stored in the dgMap (dynamic gas map) in evm.go
 	case RETURN:
-		return 0
+		return 0 // If supported, the actual gas cost will be stored in the dgMap (dynamic gas map) in evm.go
 	case DELEGATECALL:
 		return 700 // If supported, the actual gas cost will be stored in the dgMap (dynamic gas map) in evm.go
 	case CREATE2:

@@ -57,21 +57,21 @@ type ChainConfig struct {
 
 // Block represents a block.
 type Block struct {
-	Coinbase   common.Address
-	GasPrice   uint64
-	Number     uint64
-	Timestamp  time.Time
-	BaseFee    uint64
+	Coinbase  common.Address
+	GasPrice  uint64
+	Number    uint64
+	Timestamp time.Time
+	BaseFee   uint64
 }
 
 // NewBlock creates a new block instance.
 func NewBlock(coinbase common.Address, gasPrice, number, difficulty, baseFee uint64, timeStamp time.Time) *Block {
 	return &Block{
-		Coinbase:   coinbase,
-		GasPrice:   gasPrice,
-		Number:     number,
-		Timestamp:  timeStamp,
-		BaseFee:    baseFee,
+		Coinbase:  coinbase,
+		GasPrice:  gasPrice,
+		Number:    number,
+		Timestamp: timeStamp,
+		BaseFee:   baseFee,
 	}
 }
 
