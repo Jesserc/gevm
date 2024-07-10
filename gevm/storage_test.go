@@ -121,7 +121,6 @@ func TestCalcSstoreGasCost(t *testing.T) {
 		newValue       common.Hash
 		setup          func(evm *EVM) // Setup function to initialize the EVM storage
 		expectedGas    uint64
-		expectedWarm   bool
 		expectedRefund uint64
 	}{
 		{
@@ -131,39 +130,35 @@ func TestCalcSstoreGasCost(t *testing.T) {
 			setup: func(evm *EVM) {
 				evm.Storage.Store(1, common.HexToHash("0x1"))
 			},
-			expectedGas:    200,
-			expectedWarm:   true,
+			expectedGas:    100,
 			expectedRefund: 0,
 		},
 		{
-			name:           "New Slot Creation",
+			name:           "New Slot Creation - Zero to Non-Zero",
 			slot:           2,
 			newValue:       common.HexToHash("0x1"),
 			setup:          func(evm *EVM) {},
-			expectedGas:    20_000,
-			expectedWarm:   false,
+			expectedGas:    22_100,
 			expectedRefund: 0,
 		},
 		{
-			name:     "Slot Deletion",
+			name:     "Slot Deletion - Non-Zero to Zero",
 			slot:     3,
 			newValue: common.Hash{},
 			setup: func(evm *EVM) {
 				evm.Storage.Store(3, common.HexToHash("0x1"))
 			},
-			expectedGas:    5000,
-			expectedWarm:   true,
-			expectedRefund: 15_000,
+			expectedGas:    3000,
+			expectedRefund: 4800,
 		},
 		{
-			name:     "Slot Update",
+			name:     "Slot Update - Non-Zero to Non-Zero",
 			slot:     4,
 			newValue: common.HexToHash("0x2"),
 			setup: func(evm *EVM) {
 				evm.Storage.Store(4, common.HexToHash("0x1"))
 			},
-			expectedGas:    5000,
-			expectedWarm:   true,
+			expectedGas:    3000,
 			expectedRefund: 0,
 		},
 	}
@@ -179,10 +174,9 @@ func TestCalcSstoreGasCost(t *testing.T) {
 			evm.Refund = 0
 
 			// Calculate gas cost
-			gasCost, isWarm := calcSstoreGasCost(evm, tt.slot, tt.newValue)
+			gasCost := calcSstoreGasCost(evm, tt.slot, tt.newValue)
 
 			assert.Equal(t, tt.expectedGas, gasCost, "Gas cost mismatch")
-			assert.Equal(t, tt.expectedWarm, isWarm, "Warm storage mismatch")
 			assert.Equal(t, tt.expectedRefund, evm.Refund, "Refund mismatch")
 		})
 	}

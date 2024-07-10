@@ -600,8 +600,8 @@ func mstore(evm *EVM) {
 	staticGas := uint64(3)
 	dynamicGas := staticGas + memExpansionCost
 
-	evm.PC++
 	evm.deductGas(dynamicGas)
+	evm.PC++
 	dgMap[MSTORE] = dynamicGas
 }
 
@@ -613,8 +613,8 @@ func mstore8(evm *EVM) {
 	staticGas := uint64(3)
 	dynamicGas := staticGas + memExpansionCost
 
-	evm.PC++
 	evm.deductGas(dynamicGas)
+	evm.PC++
 	dgMap[MSTORE8] = dynamicGas
 }
 
@@ -638,8 +638,8 @@ func mcopy(evm *EVM) {
 	staticGas := uint64(3)
 	dynamicGas := staticGas*wordSize + memExpansionCost
 
-	evm.PC++
 	evm.deductGas(dynamicGas)
+	evm.PC++
 	dgMap[MCOPY] = dynamicGas
 }
 
@@ -669,15 +669,13 @@ func sstore(evm *EVM) {
 	slot := int(slotU256.Uint64())
 	newValue := common.BytesToHash(valueU256.Bytes())
 
-	dynamicGas, isWarm := calcSstoreGasCost(evm, slot, newValue)
-	if !isWarm {
-		dynamicGas += 2100
-	}
+	gasCost := calcSstoreGasCost(evm, slot, newValue)
 
-	evm.Storage.Store(int(slot), newValue)
+	evm.deductGas(gasCost)
+	evm.Storage.Store(slot, newValue)
+
 	evm.PC++
-	evm.deductGas(dynamicGas)
-	dgMap[SSTORE] = dynamicGas
+	dgMap[SSTORE] = gasCost
 }
 
 // Transient storage operations
@@ -685,20 +683,20 @@ func tload(evm *EVM) {
 	slotU256 := evm.Stack.Pop()
 	v := evm.Transient.Load(int(slotU256.Uint64()))
 	valueU256 := uint256.NewInt(0).SetBytes32(v[:])
-	evm.Stack.Push(valueU256)
 
-	evm.PC++
 	evm.deductGas(100)
+	evm.Stack.Push(valueU256)
+	evm.PC++
 }
 
 func tstore(evm *EVM) {
 	slotU256 := evm.Stack.Pop()
 	valueU256 := evm.Stack.Pop()
 	v := common.BytesToHash(valueU256.Bytes())
-	evm.Transient.Store(int(slotU256.Uint64()), v)
 
-	evm.PC++
 	evm.deductGas(100)
+	evm.Transient.Store(int(slotU256.Uint64()), v)
+	evm.PC++
 }
 
 // Jump operations

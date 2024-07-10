@@ -22,32 +22,38 @@ func calcMemoryGasCost(size uint64) uint64 {
 }
 
 // calcSstoreGasCost calculates the gas cost for the SSTORE operation in the EVM.
-func calcSstoreGasCost(evm *EVM, slot int, newValue common.Hash) (_ uint64, isWarm bool) {
+//
+// This is a bit simplified compared to the actual implementation in Ethereum clients.
+func calcSstoreGasCost(evm *EVM, slot int, newValue common.Hash) (gasCost uint64) {
 	// Load the current value stored at the specified slot.
 	currentValue, isWarm := evm.Storage.Get(slot)
 
+	// Determine the access cost (cold vs warm)
+	accessCost := uint64(2100)
+	if isWarm {
+		accessCost = 100
+	}
+
 	// If the current value is the same as the new value, it's a no-op.
-	// The gas cost for a no-op is 200.
 	if currentValue == newValue {
-		return 200, isWarm
+		return accessCost
 	}
 
-	// If the current value is zero and the new value is non-zero,
-	// it's a creation of a new slot, costing 20,000 gas.
+	// Calculate the dynamic gas cost
+	var dynamicCost uint64
 	if currentValue == (common.Hash{}) && newValue != (common.Hash{}) {
-		return 20_000, isWarm
+		// Zero to non-zero
+		dynamicCost = 20000
+	} else if currentValue != (common.Hash{}) && newValue == (common.Hash{}) {
+		// Non-zero to zero
+		dynamicCost = 2900
+		evm.addRefund(4800)
+	} else {
+		// Non-zero to non-zero
+		dynamicCost = 2900
 	}
 
-	// If the current value is non-zero and the new value is zero,
-	// it's a deletion of a slot, adding a refund of 15,000 gas.
-	if currentValue != (common.Hash{}) && newValue == (common.Hash{}) {
-		evm.addRefund(15_000)
-		return 5000, isWarm
-	}
-
-	// If the current value is non-zero and the new value is also non-zero,
-	// it's an update to an existing slot, costing 5,000 gas.
-	return 5000, isWarm
+	return accessCost + dynamicCost
 }
 
 func calcLogGasCost(topicCount, size, memExpansionCost uint64) uint64 {

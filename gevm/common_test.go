@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -142,73 +141,6 @@ func TestGetData(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := getData(tt.data, tt.start, tt.size)
 			assert.Equal(t, tt.want, result, "Test case %s failed", tt.name)
-		})
-	}
-}
-
-func Test_toWordSize(t *testing.T) {
-	type args struct {
-		size uint64
-	}
-	tests := []struct {
-		name string
-		args args
-		want uint64
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := toWordSize(tt.args.size); got != tt.want {
-				t.Errorf("toWordSize() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_calcMemoryGasCost(t *testing.T) {
-	type args struct {
-		size uint64
-	}
-	tests := []struct {
-		name string
-		args args
-		want uint64
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := calcMemoryGasCost(tt.args.size); got != tt.want {
-				t.Errorf("calcMemoryGasCost() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_calcSstoreGasCost(t *testing.T) {
-	type args struct {
-		evm      *EVM
-		slot     int
-		newValue common.Hash
-	}
-	tests := []struct {
-		name       string
-		args       args
-		want       uint64
-		wantIsWarm bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, gotIsWarm := calcSstoreGasCost(tt.args.evm, tt.args.slot, tt.args.newValue)
-			if got != tt.want {
-				t.Errorf("calcSstoreGasCost() got = %v, want %v", got, tt.want)
-			}
-			if gotIsWarm != tt.wantIsWarm {
-				t.Errorf("calcSstoreGasCost() gotIsWarm = %v, want %v", gotIsWarm, tt.wantIsWarm)
-			}
 		})
 	}
 }

@@ -34,7 +34,7 @@ type ExecutionRuntime struct {
 	Block      *Block
 }
 
-// ExecutionEnvironment encapsulates the EVM execution environment including the stack, memory, storage, and transient storage.
+// ExecutionEnvironment encapsulates the EVM execution data environment.
 type ExecutionEnvironment struct {
 	Stack     *Stack
 	Memory    *Memory
@@ -44,7 +44,7 @@ type ExecutionEnvironment struct {
 
 // TransactionContext holds transaction-specific information during EVM execution.
 type TransactionContext struct {
-	Sender   common.Address // [20]byte, might change to common.Hash?
+	Sender   common.Address
 	Value    uint64
 	Calldata []byte
 }
@@ -92,37 +92,54 @@ func (evm *EVM) deductGas(gas uint64) {
 
 // continueExecution checks if the EVM should continue execution.
 func (evm *EVM) continueExecution() bool {
-	return int(evm.PC) <= len(evm.Code)-1 && !evm.StopFlag && !evm.RevertFlag /* && evm.Gas > 0 */
+	return int(evm.PC) <= len(evm.Code)-1 && // Check if PC is within code bounds
+		!evm.StopFlag && // Check if STOP instruction was encountered
+		!evm.RevertFlag // Check if REVERT instruction was encountered
+	//	&& evm.Gas > 0 // Check if there's enough gas to continue
 }
 
 func (evm *EVM) Run() {
 	fmt.Println("#### Trace ####")
 
-	// Jump table
+	// Initialize the jump table containing all opcode implementations
 	jumpTable := NewJumpTable()
 	var totalGasUsed uint64
 
+	// Main execution loop
 	for evm.continueExecution() {
+		// Get the current program counter and opcode
 		currentPC := evm.PC
 		opcode := evm.Code[currentPC]
 		op := Opcode(opcode)
+
+		// Execute the opcode if it exists in the jump table
 		if opFunc, exists := jumpTable[op]; exists {
 			opFunc(evm)
 		} else {
+			// Handle unknown opcodes
 			fmt.Printf("Unknown opcode: %#x\n", opcode)
 			return
 		}
 
+		// Calculate gas cost for the operation
 		var gCost uint64
 		if has, cost := dgMap.DynamicGas(op); has {
+			// Use dynamic gas cost if available
 			gCost = cost
 		} else {
+			// Use static gas cost defined for the opcode
 			gCost = op.Gas()
 		}
-		totalGasUsed += gCost
+		totalGasUsed += gCost // accumulate total gas used
+
+		// Log the current EVM state after executing the opcode
 		logEVMState(evm, op, gCost, currentPC)
 	}
+
+	// Total gas consumed
 	totalGasUsed -= evm.Refund // minus refund, if any
+
+	// Log emitted logs and some stats
 	LogEVMLogs(totalGasUsed, evm)
 }
 
